@@ -4,13 +4,13 @@
 
 ### Names
 
-- Theebika Thiyagaraka Iyer - Theebika6 - 40191001
+- Theebika Thiyagaraja Iyer - Theebika6 - 40191001
 - Sriram Kanagaligham - Siri2K - 40170212
 - Vithujanan Vigneswaran - Houdini29 - 40157822
 
 ### Roles
 
-- Data Specialist : Theebika Thiyagaraka Iyer
+- Data Specialist : Theebika Thiyagaraja Iyer
 - Training Specialist : Sriram Kanagaligham
 - Evaluation Specialist : Vithujanan Vigneswaran
 
