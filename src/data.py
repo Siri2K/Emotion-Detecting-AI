@@ -140,6 +140,16 @@ class EmotionImages:
         return indexList
 
     def plotImageGrid(self, indexList: List[List[int]]):
+        '''
+        Lines 179 and Lines 180 were setup using ChatGPT. Mainly to seperate titles between main plot and subplot
+        axImage setup was configured with the help of ChatGPT and
+        https://stackoverflow.com/questions/41793931/plotting-images-side-by-side-using-matplotlib
+
+        :param indexList:
+        :return:
+        '''
+
+
         # Initialize data
         images: List[List[Image]] = self.getImages()
 
@@ -147,6 +157,7 @@ class EmotionImages:
         nRows: int = 3
         nColumns: int = 5
         title: str = ''
+
         figure, axImages = plt.subplots(nRows, nColumns, figsize=(6, 8))
         for i in range(nRows):
             for j in range(nColumns):
@@ -155,11 +166,11 @@ class EmotionImages:
                 # Get Image Titles
                 if indexPair[0] == 0:
                     title = "Angry"
-                elif indexPair[0] == 0:
+                elif indexPair[0] == 1:
                     title = "Focused"
-                elif indexPair[0] == 0:
+                elif indexPair[0] == 2:
                     title = "Happy"
-                elif indexPair[0] == 0:
+                elif indexPair[0] == 3:
                     title = "Neutral"
 
                 axImages[i, j].imshow(images[indexPair[0]][indexPair[1]], cmap='gray')
@@ -169,4 +180,27 @@ class EmotionImages:
         # Setup Plots
         figure.suptitle("Sample Image Grid", fontsize=16)
         figure.tight_layout()
+
+
+    # Pixel Intensity Distribution per Class
+    def pixelIntensityDistributionClass(self):
+
+        image_List = self.getImages()
+
+        for image_group in image_List:
+            # from GeekforGeeks
+            """ https: // www.geeksforgeeks.org / opencv - python - program - analyze - image - using - histogram /
+            # alternative way to find histogram of an image 
+                plt.hist(img.ravel(),256,[0,256]) 
+                plt.show() 
+            """
+            pixel_values = np.array([np.array(image).ravel() for image in image_group]).ravel()
+            plt.figure()
+            plt.hist(pixel_values.ravel(), 256, [0, 256])
+
+            plt.xlabel('Pixel Intensity')
+            plt.ylabel('Frequency')
+            plt.title('Histogram for Pixel Intensity per Class')
+
+    def display(self):
         plt.show()

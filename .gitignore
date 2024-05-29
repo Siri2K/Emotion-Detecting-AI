@@ -161,7 +161,7 @@ cython_debug/
 
 
 # Resource Files
-resources/Angry
-resources/Focused
-resources/Happy
-resources/Neutral
+resources/Angry/
+resources/Focused/
+resources/Happy/
+resources/Neutral/
