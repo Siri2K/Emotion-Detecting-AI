@@ -1,5 +1,9 @@
+from data import EmotionImages
+
+
 def main():
-    pass
+    dataset: EmotionImages = EmotionImages()
+    dataset.initialize()
 
 
 if __name__ == '__main__':
