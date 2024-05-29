@@ -202,5 +202,34 @@ class EmotionImages:
             plt.ylabel('Frequency')
             plt.title('Histogram for Pixel Intensity per Class')
 
+    def classDistribution(self):
+        """
+            the graph was set up using https://www.geeksforgeeks.org/plotting-multiple-bar-charts-using-matplotlib-in-python/
+        :return:
+        """
+
+        X = ['Angry', 'Focused', 'Happy', 'Neutral']
+        Y = []
+
+        # Setup Y
+        for folders in self.getImages():
+            Y.append(len(folders))
+        # Y = [518, 507, 507, 516]
+
+        X_axis = np.arange(len(X))
+
+        plt.figure()
+        plt.bar(X_axis, Y, 0.4)
+
+        for i in range(len(X)):
+            plt.text(i, Y[i] + 5, str(Y[i]), ha='center', va='bottom')
+
+        plt.xticks(X_axis, X)
+        plt.xlabel("Classes")
+        plt.ylabel("Number of Images")
+        plt.title("Number of Images in each class")
+        plt.ylim(0, 600)
+
     def display(self):
         plt.show()
+
