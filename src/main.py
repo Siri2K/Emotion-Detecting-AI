@@ -6,6 +6,7 @@ def main():
     dataset.initialize()
     dataset.plotImageGrid(dataset.plotImageGridIndexes())
     dataset.pixelIntensityDistributionClass()
+    dataset.classDistribution()
     dataset.display()
 
 if __name__ == '__main__':
