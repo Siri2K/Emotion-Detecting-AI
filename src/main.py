@@ -1,14 +1,22 @@
-from data import EmotionImages, display
+import sys
+from data import EmotionImages
 
 
 def main():
+    # Initialize DataSet
     dataset: EmotionImages = EmotionImages()
     dataset.initialize()
-    dataset.plotImageGrid(dataset.gatherImageIndexes())
-    dataset.plotPixelIntensityForSample()
-    dataset.pixelIntensityDistributionClass()
-    dataset.classDistribution()
-    display()
+
+    # Choose to Either Clean or Visualize Dataset
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "--clean":
+            dataset.cleanImages()
+            print("Dataset Cleaned")
+        else:
+            print("Invalid Command")
+            print("Please Enter : python main.py or python main.py --clean")
+    else:
+        dataset.plotVisuals()
 
 
 if __name__ == '__main__':

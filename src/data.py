@@ -4,7 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random as rnd
 
-from sklearn.model_selection import train_test_split
 from typing import List
 from PIL import Image
 
@@ -29,11 +28,11 @@ def display():
 
 
 def gatherRGBOfImages(images: List[Image.Image]):
-    '''
+    """
         Formula for intensity was acquired using ChatGPT
     :param images:
     :return:
-    '''
+    """
 
     # Gather the Intensity of every images
     intensity: List[int] = []
@@ -73,8 +72,6 @@ class EmotionImages:
     # Roles
     def initialize(self):
         self.readImages()  # Gather Image and File Path from every file
-        self.cleanImages()  # GrayScale and Resize Files
-        savedImages(self.getImages(), self.getFiles())  # Save new images into their respective files
 
     def readImages(self):
         """
@@ -144,7 +141,9 @@ class EmotionImages:
                 newImages.append(resizedImage)
             newImageList.append(newImages)
 
+        # Save New Images and Files
         self.setImages(newImageList)
+        savedImages(self.getImages(), self.getFiles())  # Save new images into their respective files
 
     def gatherImageIndexes(self) -> List[List[int]]:
         # Initialize data
@@ -165,14 +164,14 @@ class EmotionImages:
         return indexList
 
     def plotImageGrid(self, indexList: List[List[int]]):
-        '''
-        Lines 179 and Lines 180 were setup using ChatGPT. Mainly to seperate titles between main plot and subplot
+        """
+        Lines 179 and Lines 180 were set up using ChatGPT. Mainly to separate titles between main plot and subplot
         axImage setup was configured with the help of ChatGPT and
         https://stackoverflow.com/questions/41793931/plotting-images-side-by-side-using-matplotlib
 
         :param indexList:
         :return:
-        '''
+        """
 
         # Initialize data
         sampleImages: List[Image] = []
@@ -241,9 +240,10 @@ class EmotionImages:
             plt.title(f'Histogram for Pixel Intensity of {title} Images')
             index += 1
 
-    def classDistribution(self):
+    def plotClassDistribution(self):
         """
-            the graph was set up using https://www.geeksforgeeks.org/plotting-multiple-bar-charts-using-matplotlib-in-python/
+            the graph was set up using
+            https://www.geeksforgeeks.org/plotting-multiple-bar-charts-using-matplotlib-in-python/
         :return:
         """
 
@@ -280,3 +280,9 @@ class EmotionImages:
         plt.ylabel("Average Frequency")
         plt.tight_layout()
 
+    def plotVisuals(self):
+        self.plotImageGrid(self.gatherImageIndexes())
+        self.plotPixelIntensityForSample()
+        self.pixelIntensityDistributionClass()
+        self.plotClassDistribution()
+        display()
