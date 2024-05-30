@@ -213,6 +213,8 @@ class EmotionImages:
 
         image_List = self.getImages()
 
+        index = 0
+
         for image_group in image_List:
             # from GeekforGeeks
             """ https: // www.geeksforgeeks.org / opencv - python - program - analyze - image - using - histogram /
@@ -220,13 +222,24 @@ class EmotionImages:
                 plt.hist(img.ravel(),256,[0,256]) 
                 plt.show() 
             """
-            pixel_values = np.array([np.array(image).ravel() for image in image_group]).ravel()
+            # Get Image Titles
+            title = ''
+            if index == 0:
+                title = "Angry"
+            elif index == 1:
+                title = "Focused"
+            elif index == 2:
+                title = "Happy"
+            elif index == 3:
+                title = "Neutral"
+            pixel_values = gatherRGBOfImages(image_group)
             plt.figure()
-            plt.hist(pixel_values.ravel(), 256, [0, 256])
+            plt.hist(pixel_values, bins=256, alpha=0.7, edgecolor='black')
 
             plt.xlabel('Pixel Intensity')
             plt.ylabel('Frequency')
-            plt.title('Histogram for Pixel Intensity per Class')
+            plt.title(f'Histogram for Pixel Intensity of {title} Images')
+            index += 1
 
     def classDistribution(self):
         """
