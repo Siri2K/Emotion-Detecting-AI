@@ -24,11 +24,30 @@ def savedImages(imageList: List[List[Image.Image]], fileLists: List[List[str]]):
             image.save(file_path, optimize=True, quality=95)  # Save Images and Optimize Size
 
 
+def display():
+    plt.show()
+
+
+def gatherRGBOfImages(images: List[Image.Image]):
+    '''
+        Formula for intensity was acquired using ChatGPT
+    :param images:
+    :return:
+    '''
+
+    # Gather the Intensity of every images
+    intensity: List[int] = []
+    for image in images:
+        intensity.append(int(sum(image.getdata()) / (image.width * image.height)))
+    return intensity
+
+
 class EmotionImages:
     # Constructor
     def __init__(self):
         super().__init__()
         # self.emotions: int = 0
+        self.__sampleImages: List[Image.Image] = []
         self.__images: List[List[Image.Image]] = []
         self.__file: List[List[str]] = []
 
@@ -36,11 +55,17 @@ class EmotionImages:
     def setImages(self, image: List[List[Image.Image]]):
         self.__images = image
 
+    def setSampleImages(self, sampleImage: List[Image.Image]):
+        self.__sampleImages = sampleImage
+
     def setFiles(self, file: List[List[str]]):
         self.__file = file
 
     def getImages(self) -> List[List[Image.Image]]:
         return self.__images.copy()
+
+    def getSampleImages(self) -> List[Image.Image]:
+        return self.__sampleImages.copy()
 
     def getFiles(self) -> List[List[str]]:
         return self.__file.copy()
@@ -121,7 +146,7 @@ class EmotionImages:
 
         self.setImages(newImageList)
 
-    def plotImageGridIndexes(self) -> List[List[int]]:
+    def gatherImageIndexes(self) -> List[List[int]]:
         # Initialize data
         images: List[List[Image]] = self.getImages()
 
@@ -149,8 +174,8 @@ class EmotionImages:
         :return:
         '''
 
-
         # Initialize data
+        sampleImages: List[Image] = []
         images: List[List[Image]] = self.getImages()
 
         # Setup Grid Images
@@ -173,14 +198,15 @@ class EmotionImages:
                 elif indexPair[0] == 3:
                     title = "Neutral"
 
+                sampleImages.append(images[indexPair[0]][indexPair[1]])
                 axImages[i, j].imshow(images[indexPair[0]][indexPair[1]], cmap='gray')
                 axImages[i, j].axis('off')
                 axImages[i, j].set_title(title)
 
         # Setup Plots
+        self.setSampleImages(sampleImages)
         figure.suptitle("Sample Image Grid", fontsize=16)
         figure.tight_layout()
-
 
     # Pixel Intensity Distribution per Class
     def pixelIntensityDistributionClass(self):
@@ -214,7 +240,6 @@ class EmotionImages:
         # Setup Y
         for folders in self.getImages():
             Y.append(len(folders))
-        # Y = [518, 507, 507, 516]
 
         X_axis = np.arange(len(X))
 
@@ -230,6 +255,15 @@ class EmotionImages:
         plt.title("Number of Images in each class")
         plt.ylim(0, 600)
 
-    def display(self):
-        plt.show()
+    def plotPixelIntensityForSample(self):
+        # Gather Red, Green , Blue Intensities
+        intensity = gatherRGBOfImages(self.getSampleImages())
+
+        # Create Histograms for each Color Intensity
+        plt.figure()
+        plt.hist(intensity, alpha=0.7, edgecolor='black')
+        plt.title("Sample Image Pixel Intensity", fontsize=16)
+        plt.xlabel("Pixel Intensity")
+        plt.ylabel("Average Frequency")
+        plt.tight_layout()
 

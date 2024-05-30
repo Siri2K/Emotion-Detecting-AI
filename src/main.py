@@ -1,13 +1,15 @@
-from data import EmotionImages
+from data import EmotionImages, display
 
 
 def main():
     dataset: EmotionImages = EmotionImages()
     dataset.initialize()
-    dataset.plotImageGrid(dataset.plotImageGridIndexes())
+    dataset.plotImageGrid(dataset.gatherImageIndexes())
+    dataset.plotPixelIntensityForSample()
     dataset.pixelIntensityDistributionClass()
     dataset.classDistribution()
-    dataset.display()
+    display()
+
 
 if __name__ == '__main__':
     main()
