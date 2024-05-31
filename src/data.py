@@ -1,4 +1,5 @@
 import os
+import platform
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -154,8 +155,8 @@ class EmotionImages:
         indexPair: List[int] = []
         for i in range(15):
             # Get Pairs
-            indexPair.append(rnd.randrange(start=0, stop=len(images) - 1))
-            indexPair.append(rnd.randrange(start=0, stop=len(images[indexPair[0]]) - 1))
+            indexPair.append(rnd.randrange(start=0, stop=len(images)))
+            indexPair.append(rnd.randrange(start=0, stop=len(images[indexPair[0]])))
 
             # Add them to list and clear
             indexList.append(indexPair.copy())
@@ -180,27 +181,23 @@ class EmotionImages:
         # Setup Grid Images
         nRows: int = 3
         nColumns: int = 5
-        title: str = ''
 
         figure, axImages = plt.subplots(nRows, nColumns, figsize=(6, 8))
         for i in range(nRows):
             for j in range(nColumns):
+                # Get Index Pair
                 indexPair: List[int] = indexList.pop()
 
-                # Get Image Titles
-                if indexPair[0] == 0:
-                    title = "Angry"
-                elif indexPair[0] == 1:
-                    title = "Focused"
-                elif indexPair[0] == 2:
-                    title = "Happy"
-                elif indexPair[0] == 3:
-                    title = "Neutral"
+                # Get Image title from Filepath
+                if platform.system() == "Windows":
+                    sampleFilepath = self.getFiles()[indexPair[0]].pop().split("\\")
+                else:
+                    sampleFilepath = self.getFiles()[indexPair[0]].pop().split("/")
 
                 sampleImages.append(images[indexPair[0]][indexPair[1]])
                 axImages[i, j].imshow(images[indexPair[0]][indexPair[1]], cmap='gray')
                 axImages[i, j].axis('off')
-                axImages[i, j].set_title(title)
+                axImages[i, j].set_title(sampleFilepath[-2])
 
         # Setup Plots
         self.setSampleImages(sampleImages)
@@ -221,23 +218,19 @@ class EmotionImages:
                 plt.hist(img.ravel(),256,[0,256]) 
                 plt.show() 
             """
-            # Get Image Titles
-            title = ''
-            if index == 0:
-                title = "Angry"
-            elif index == 1:
-                title = "Focused"
-            elif index == 2:
-                title = "Happy"
-            elif index == 3:
-                title = "Neutral"
+            # Get Image title from Filepath
+            if platform.system() == "Windows":
+                sampleFilepath = self.getFiles()[index].pop().split("\\")
+            else:
+                sampleFilepath = self.getFiles()[index].pop().split("/")
+
             pixel_values = gatherRGBOfImages(image_group)
             plt.figure()
             plt.hist(pixel_values, bins=256, alpha=0.7, edgecolor='black')
 
             plt.xlabel('Pixel Intensity')
             plt.ylabel('Frequency')
-            plt.title(f'Histogram for Pixel Intensity of {title} Images')
+            plt.title(f'Histogram for Pixel Intensity of {sampleFilepath[-2]} Images')
             index += 1
 
     def plotClassDistribution(self):
