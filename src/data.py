@@ -97,6 +97,8 @@ class EmotionImages:
         savedFileList: List[List[str]] = []
         imageList: List[List[Image.Image]] = []
         for root, directory, files in os.walk(desiredDirectory):
+            '''if not root.endswith("Dummy"):
+                continue'''
             savedFile: List[str] = []
             images: List[Image.Image] = []
             for file in files:
@@ -157,6 +159,12 @@ class EmotionImages:
             # Get Pairs
             indexPair.append(rnd.randrange(start=0, stop=len(images)))
             indexPair.append(rnd.randrange(start=0, stop=len(images[indexPair[0]])))
+
+            # Check if Pair Reapeats & Get A New Pair
+            while indexList.count(indexPair) > 0:
+                indexPair.clear()
+                indexPair.append(rnd.randrange(start=0, stop=len(images)))
+                indexPair.append(rnd.randrange(start=0, stop=len(images[indexPair[0]])))
 
             # Add them to list and clear
             indexList.append(indexPair.copy())
@@ -240,12 +248,19 @@ class EmotionImages:
         :return:
         """
 
-        X = ['Angry', 'Focused', 'Happy', 'Neutral']
+        # Initialize Variables
+        images = self.getImages()
+        X = []
         Y = []
 
-        # Setup Y
-        for folders in self.getImages():
-            Y.append(len(folders))
+        # Setup X and Y
+        for i in range(len(images)):
+            if platform.system() == "Windows":
+                folder = self.getFiles()[i].pop().split("\\")
+            else:
+                folder = self.getFiles()[i].pop().split("/")
+            X.append(folder[-2])
+            Y.append(len(images[i]))
 
         X_axis = np.arange(len(X))
 
