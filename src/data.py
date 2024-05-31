@@ -97,8 +97,8 @@ class EmotionImages:
         savedFileList: List[List[str]] = []
         imageList: List[List[Image.Image]] = []
         for root, directory, files in os.walk(desiredDirectory):
-            '''if not root.endswith("Dummy"):
-                continue'''
+            if not root.endswith("Dummy"):
+                continue
             savedFile: List[str] = []
             images: List[Image.Image] = []
             for file in files:
