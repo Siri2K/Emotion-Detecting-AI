@@ -7,7 +7,8 @@ import random as rnd
 
 from typing import List
 from PIL import Image
-
+from torch.utils.data.dataset import Dataset
+import torch
 
 def savedImages(imageList: List[List[Image.Image]], fileLists: List[List[str]]):
     """
@@ -292,3 +293,22 @@ class EmotionImages:
         self.pixelIntensityDistributionClass()
         self.plotClassDistribution()
         display()
+
+    # split the dataset into training, testing and validation sets
+    def split_data(self, random_state=42):
+        total_images = len(self.getImages())
+        train_size = int(0.7 * total_images)
+        test_size = int(0.15 * total_images)
+        validation_size = total_images - train_size - test_size
+        self.train_images = self.getImages()[:train_size]
+        self.test_images = self.getImages()[train_size:train_size + test_size]
+        self.validation_images = self.getImages()[train_size + test_size:]
+        self.train_labels = [i for i in range(len(self.train_images))]
+        self.test_labels = [i for i in range(len(self.test_images))]
+        self.validation_labels = [i for i in range(len(self.validation_images))]
+        self.train_labels = torch.tensor(self.train_labels)
+        self.test_labels = torch.tensor(self.test_labels)
+        self.validation_labels = torch.tensor(self.validation_labels)
+        self.train_images = torch.tensor(self.train_images)
+        self.test_images = torch.tensor(self.test_images)
+        self.validation_images = torch.tensor(self.validation_images)

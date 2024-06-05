@@ -8,6 +8,7 @@ def main():
     # Initialize DataSet
     dataset: EmotionImages = EmotionImages()
     dataset.initialize()
+    dataset.split_data()
 
     # Choose to Either Clean or Visualize Dataset
     if len(sys.argv) > 1:
