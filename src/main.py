@@ -1,5 +1,7 @@
 import sys
 from data import EmotionImages
+from cnn import CNN
+import torchvision.transforms as transforms
 
 
 def main():
@@ -19,6 +21,10 @@ def main():
             print("Please Enter : python main.py or python main.py --clean")
     else:
         dataset.plotVisuals()
+
+    # Initialize CNN
+    variant1: CNN = CNN()
+    variant1.initialize([1, 1, 1], [16, 32, 64], 3)
 
 
 if __name__ == '__main__':
