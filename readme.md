@@ -42,6 +42,6 @@ execute the entire program.
    - Clean the dataset (On Windows)
         > python src\main.py --clean
    - Visualize the dataset (On Linux or Mac)
-        > python src/main.py
+        > python src/main.py --display
    - Visualize the dataset (On Windows)
-        > python src\main.py
+        > python src\main.py --display
