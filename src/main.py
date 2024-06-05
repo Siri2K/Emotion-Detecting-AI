@@ -12,6 +12,8 @@ def main():
         if sys.argv[1] == "--clean":
             dataset.cleanImages()
             print("Dataset Cleaned")
+        elif sys.argv[1] == "--display":
+            dataset.plotVisuals()
         else:
             print("Invalid Command")
             print("Please Enter : python main.py or python main.py --clean")
