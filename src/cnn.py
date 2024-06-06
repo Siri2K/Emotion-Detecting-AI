@@ -31,7 +31,7 @@ class CNN(nn.Module):
         - Layers and FC Layers setup with the help of:
           https://moodle.concordia.ca/moodle/pluginfile.php/6908445/mod_resource/content/3/a2.pdf
 
-        - Formula to predict Convolution Layer size obtined from :
+        - Formula to predict Convolution Layer size obtained from :
           https://stackoverflow.com/questions/53580088/calculate-the-output-size-in-convolution-layer
 
         :param inChannel:

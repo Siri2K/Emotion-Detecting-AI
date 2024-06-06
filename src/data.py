@@ -7,6 +7,7 @@ import random as rnd
 
 from typing import List
 from PIL import Image
+from sklearn.model_selection import train_test_split
 
 
 def savedImages(imageList: List[List[Image.Image]], fileLists: List[List[str]]):
@@ -50,6 +51,11 @@ class EmotionImages:
         self.__sampleImages: List[Image.Image] = []
         self.__images: List[List[Image.Image]] = []
         self.__file: List[List[str]] = []
+        self.__dataset: dict = {
+            'train': {},
+            'test': {},
+            'validation': {}
+        }
 
     # Set & Getter
     def setImages(self, image: List[List[Image.Image]]):
@@ -61,6 +67,9 @@ class EmotionImages:
     def setFiles(self, file: List[List[str]]):
         self.__file = file
 
+    def setDataset(self, dataset: dict):
+        self.__dataset = dataset
+
     def getImages(self) -> List[List[Image.Image]]:
         return self.__images.copy()
 
@@ -70,9 +79,13 @@ class EmotionImages:
     def getFiles(self) -> List[List[str]]:
         return self.__file.copy()
 
+    def getDataset(self) -> dict:
+        return self.__dataset.copy()
+
     # Roles
     def initialize(self):
         self.readImages()  # Gather Image and File Path from every file
+        self.splitData()
 
     def readImages(self):
         """
@@ -292,3 +305,69 @@ class EmotionImages:
         self.pixelIntensityDistributionClass()
         self.plotClassDistribution()
         display()
+
+    '''
+    # split the dataset into training, testing and validation sets
+    def splitData(self, random_state=42):
+        total_images = len(self.getImages())
+        train_size = int(0.7 * total_images)
+        test_size = int(0.15 * total_images)
+        validation_size = total_images - train_size - test_size
+        self.train_images = self.getImages()[:train_size]
+        self.test_images = self.getImages()[train_size:train_size + test_size]
+        self.validation_images = self.getImages()[train_size + test_size:]
+        self.train_labels = [i for i in range(len(self.train_images))]
+        self.test_labels = [i for i in range(len(self.test_images))]
+        self.validation_labels = [i for i in range(len(self.validation_images))]
+        self.train_labels = torch.tensor(self.train_labels)
+        self.test_labels = torch.tensor(self.test_labels)
+        self.validation_labels = torch.tensor(self.validation_labels)
+        self.train_images = torch.tensor(self.train_images)
+        self.test_images = torch.tensor(self.test_images)
+        self.validation_images = torch.tensor(self.validation_images)
+    '''
+
+    def splitData(self):
+        """
+        train_test_split setup was inspired by lab 5:
+        https://moodle.concordia.ca/moodle/pluginfile.php/6908483/mod_resource/content/9/lab05-sol.pdf
+
+        train_test_split without shuffling was taken by:
+        https://stackoverflow.com/questions/43838052/how-to-get-a-non-shuffled-train-test-split-in-sklearn
+
+        :return:
+        """
+
+        # Gather Image and FileList
+        imageSet = self.getImages()
+        fileSet = self.getFiles()
+        dataset = self.getDataset()
+
+        # Split Files with scikit-learn
+        for images, files in zip(imageSet, fileSet):
+            # Get Image title from Filepath
+            if platform.system() == "Windows":
+                emotion = files.pop().split("\\")[-2]
+            else:
+                emotion = files.pop().split("/")[-2]
+
+            # Split into Training Testing & Validation (Training : 70%, Testing: 15%, Validation: 15%)
+            trainImages, testAndValidationImages = train_test_split(
+                images,
+                test_size=0.3,
+                shuffle=False
+            )  # Training: 70%, Test And validation Combined = 30%
+
+            testImages, validationImages = train_test_split(
+                testAndValidationImages,
+                test_size=0.5,
+                shuffle=False
+            )  # Test: 50%, Validation Combined = 50%
+
+            # Store within Dataset
+            dataset['train'][emotion] = trainImages
+            dataset['test'][emotion] = testImages
+            dataset['validation'][emotion] = validationImages
+
+        # Store Final Result
+        self.setDataset(dataset)
