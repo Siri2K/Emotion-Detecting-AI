@@ -29,6 +29,9 @@ def main():
     variant1: CNN = CNN() # Variant1
     variant1.initialize([1, 1, 1], [16, 32, 64], 3)
 
+    variant2: CNN = CNN() # Variant 2
+    variant2.initialize([3,32,32,64],[32,32,64,64],1)
+
 
 if __name__ == '__main__':
     main()
