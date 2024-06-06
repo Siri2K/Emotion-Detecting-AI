@@ -1,5 +1,5 @@
 numpy
 matplotlib
 pillow
+scikit-learn
 pytorch
-torchvision
