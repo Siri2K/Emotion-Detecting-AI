@@ -4,6 +4,7 @@ import platform
 import numpy as np
 import matplotlib.pyplot as plt
 import random as rnd
+import torch.utils.data as td
 
 from typing import List
 from PIL import Image
@@ -56,6 +57,11 @@ class EmotionImages:
             'test': {},
             'validation': {}
         }
+        self.__dataLoader: dict = {
+            'train': {},
+            'test': {},
+            'validation': {}
+        }
 
     # Set & Getter
     def setImages(self, image: List[List[Image.Image]]):
@@ -70,6 +76,9 @@ class EmotionImages:
     def setDataset(self, dataset: dict):
         self.__dataset = dataset
 
+    def setDataLoader(self, dataLoader: dict):
+        self.__dataLoader = dataLoader
+
     def getImages(self) -> List[List[Image.Image]]:
         return self.__images.copy()
 
@@ -81,6 +90,9 @@ class EmotionImages:
 
     def getDataset(self) -> dict:
         return self.__dataset.copy()
+
+    def getDataLoader(self) -> dict:
+        return self.__dataLoader.copy()
 
     # Roles
     def initialize(self):
@@ -171,7 +183,7 @@ class EmotionImages:
             indexPair.append(rnd.randrange(start=0, stop=len(images)))
             indexPair.append(rnd.randrange(start=0, stop=len(images[indexPair[0]])))
 
-            # Check if Pair Reapeats & Get A New Pair
+            # Check if Pair Repeats & Get A New Pair
             while indexList.count(indexPair) > 0:
                 indexPair.clear()
                 indexPair.append(rnd.randrange(start=0, stop=len(images)))
@@ -371,3 +383,23 @@ class EmotionImages:
 
         # Store Final Result
         self.setDataset(dataset)
+
+    def dataLoader(self):
+        dataset = self.getDataset()
+        dataLoader: dict = {}
+
+        # Hyper-parameters
+        batch_size = 4
+
+        # Setup DataLoader
+        dataLoader['train'] = td.DataLoader(dataset['train'], batch_size=batch_size,
+                                            shuffle=False, pin_memory=True)
+        dataLoader['test'] = td.DataLoader(dataset['test'], batch_size=batch_size,
+                                           shuffle=False, pin_memory=True)
+        dataLoader['validation'] = td.DataLoader(dataset['validation'], batch_size=batch_size,
+                                                 shuffle=False, pin_memory=True)
+
+        self.setDataLoader(dataLoader)
+
+        for keys in self.getDataLoader()['train']:
+            print(keys)
