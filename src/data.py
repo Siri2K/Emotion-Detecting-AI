@@ -4,6 +4,8 @@ import platform
 import numpy as np
 import matplotlib.pyplot as plt
 import random as rnd
+
+import torch
 import torch.utils.data as td
 
 from typing import List
@@ -75,6 +77,7 @@ class EmotionImages:
 
     def setDataset(self, dataset: dict):
         self.__dataset = dataset
+        self.__flatten_dataset() # Flatten Dataset
 
     def setDataLoader(self, dataLoader: dict):
         self.__dataLoader = dataLoader
@@ -93,6 +96,23 @@ class EmotionImages:
 
     def getDataLoader(self) -> dict:
         return self.__dataLoader.copy()
+
+    # chatgpt
+    def __flatten_dataset(self):
+        self.__flat_dataset = []
+        for label, images in self.__dataset['train'].items():
+            for image in images:
+                self.__flat_dataset.append((image, label))
+
+    # lab 7
+    def __len__(self):
+        return len(self.__flat_dataset)
+
+    def __getitem__(self, index):
+        image, label = self.__flat_dataset[index]
+        image = torch.tensor(np.array(image), dtype= torch.float32)  # Convert PIL image to tensor
+        label_idx = list(self.__dataset['train'].keys()).index(label)  # Convert label to integer index
+        return image, label_idx
 
     # Roles
     def initialize(self):
@@ -319,27 +339,6 @@ class EmotionImages:
         self.plotClassDistribution()
         display()
 
-    '''
-    # split the dataset into training, testing and validation sets
-    def splitData(self, random_state=42):
-        total_images = len(self.getImages())
-        train_size = int(0.7 * total_images)
-        test_size = int(0.15 * total_images)
-        validation_size = total_images - train_size - test_size
-        self.train_images = self.getImages()[:train_size]
-        self.test_images = self.getImages()[train_size:train_size + test_size]
-        self.validation_images = self.getImages()[train_size + test_size:]
-        self.train_labels = [i for i in range(len(self.train_images))]
-        self.test_labels = [i for i in range(len(self.test_images))]
-        self.validation_labels = [i for i in range(len(self.validation_images))]
-        self.train_labels = torch.tensor(self.train_labels)
-        self.test_labels = torch.tensor(self.test_labels)
-        self.validation_labels = torch.tensor(self.validation_labels)
-        self.train_images = torch.tensor(self.train_images)
-        self.test_images = torch.tensor(self.test_images)
-        self.validation_images = torch.tensor(self.validation_images)
-    '''
-
     def splitData(self):
         """
         train_test_split setup was inspired by lab 5:
@@ -386,18 +385,28 @@ class EmotionImages:
         self.setDataset(dataset)
 
     def dataLoader(self):
-        dataset = self.getDataset()
-        dataLoader: dict = {}
+        self.__flatten_dataset()
 
-        # Hyper-parameters
+        class CustomDataset(td.Dataset):
+            def __init__(self, flat_dataset):
+                self.flat_dataset = flat_dataset
+
+            def __len__(self):
+                return len(self.flat_dataset)
+
+            def __getitem__(self, idx):
+                image, label = self.flat_dataset[idx]
+                image = torch.tensor(np.array(image), dtype=torch.float32)  # Convert PIL image to tensor
+                label_idx = list(set([label for _, label in self.flat_dataset])).index(label)
+                return image, label_idx
+
         batch_size = 4
 
-        # Setup DataLoader
-        dataLoader['train'] = td.DataLoader(dataset['train'], batch_size=batch_size,
-                                            shuffle=False, pin_memory=True)
-        dataLoader['test'] = td.DataLoader(dataset['test'], batch_size=batch_size,
-                                           shuffle=False, pin_memory=True)
-        dataLoader['validation'] = td.DataLoader(dataset['validation'], batch_size=batch_size,
-                                                 shuffle=False, pin_memory=True)
+        train_data = CustomDataset(self.__flat_dataset)
+        self.__dataLoader['train'] = td.DataLoader(train_data, batch_size=batch_size, shuffle=False, pin_memory=True)
+        self.__dataLoader['test'] = td.DataLoader(train_data, batch_size=batch_size, shuffle=False,
+                                                  pin_memory=True)  # Replace with actual test dataset
+        self.__dataLoader['validation'] = td.DataLoader(train_data, batch_size=batch_size, shuffle=False,
+                                                        pin_memory=True)  # Replace with actual validation dataset
 
-        self.setDataLoader(dataLoader)
+

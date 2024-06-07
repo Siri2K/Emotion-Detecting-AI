@@ -34,6 +34,11 @@ class Train:
         trainLoader = self.getTrainingDataSet()
         model = self.getModel()
 
+        # Chatgpt recomended us to check if Dataloader is empty
+        if len(trainLoader) == 0:
+            print("Training DataLoader is empty.")
+            return
+
         # Hidden Parameters
         num_epochs = 10
         batch_size = 4
@@ -46,23 +51,32 @@ class Train:
         loss_list = []
         acc_list = []
 
+        print(f"Starting training with {len(trainLoader)} batches")
+
         for epoch in range(num_epochs):
-            for i, (images, labels) in enumerate(trainLoader):  # Forward pass
+            print(f"Epoch {epoch + 1}/{num_epochs}")
+            for i, (images, labels) in enumerate(trainLoader):
+                # Check the shape of images tensor
+                if images.dim() == 3:
+                    # Add batch dimension if missing
+                    images = images.unsqueeze(0)
+
+                # Ensure images have 4 dimensions before applying permute
+                if images.dim() == 4:
+                    images = images.permute(0, 3, 1, 2)  # Convert to channel-first format
+
                 outputs = model(images)
                 loss = criterion(outputs, labels)
                 loss_list.append(loss.item())
 
-                # Backprop and optimisation
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
-                # Train accuracy
                 total = labels.size(0)
                 _, predicted = torch.max(outputs.data, 1)
                 correct = (predicted == labels).sum().item()
                 acc_list.append(correct / total)
                 if (i + 1) % 100 == 0:
-                    print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Accuracy: {:.2f}%'.format(
-                        epoch + 1, num_epochs, i + 1, total_step, loss.item(), (correct / total) * 100)
-                    )
+                    print(
+                        f'Epoch [{epoch + 1}/{num_epochs}], Step [{i + 1}/{total_step}], Loss: {loss.item():.4f}, Accuracy: {correct / total * 100:.2f}%')
