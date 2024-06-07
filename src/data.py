@@ -98,6 +98,7 @@ class EmotionImages:
     def initialize(self):
         self.readImages()  # Gather Image and File Path from every file
         self.splitData()
+        self.dataLoader()
 
     def readImages(self):
         """
@@ -400,6 +401,3 @@ class EmotionImages:
                                                  shuffle=False, pin_memory=True)
 
         self.setDataLoader(dataLoader)
-
-        for keys in self.getDataLoader()['train']:
-            print(keys)
