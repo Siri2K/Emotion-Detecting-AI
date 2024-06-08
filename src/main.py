@@ -109,16 +109,23 @@ def trainCNN(dataLoader: dict, model: Union[CNNModel]):
 def train_accuracy(dataLoader: dict, model: Union[CNNModel]):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     emotion_to_index = {'Angry': 0, 'Happy': 1, 'Focused': 2, 'Neutral': 3}
+    index_to_emotion = {v: k for k, v in emotion_to_index.items()}
     model.eval()
     with torch.no_grad():
         correct = 0
         total = 0
+        all_labels = []
+        all_preds = []
         for images, labels in dataLoader['test']:
+            images = images.to(device)
             labels = torch.tensor([emotion_to_index[label] for label in labels]).to(device)
             outputs = model(images)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
+
+            all_labels.extend(labels.cpu().numpy())
+            all_preds.extend(predicted.cpu().numpy())
 
         print("Test Accuracy of the model on the 300 test images : {} %".format((correct / total) * 100))
 
@@ -129,16 +136,16 @@ def train_accuracy(dataLoader: dict, model: Union[CNNModel]):
         else:
             desiredDirectory = os.path.join(projectDirectory, "resources")
 
-        torch.save(model.state_dict(), )
-        torch.save(model.state_dict(), os.path.join(desiredDirectory, "model_location"))
+        torch.save(model.state_dict(), os.path.join(desiredDirectory, "model_location.pth"))
 
-        confusion(correct, predicted)
+        confusion(all_labels, all_preds)
 
 
 def confusion(c, p):
+    emotionLabels = ['Angry', 'Focused', 'Happy', 'Neutral']
     confusion_matrix = metrics.confusion_matrix(c, p)
 
-    cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix=confusion_matrix, display_labels=[0, 1])
+    cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix=confusion_matrix, display_labels=emotionLabels)
 
     cm_display.plot()
     plt.show()
