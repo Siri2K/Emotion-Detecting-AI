@@ -8,6 +8,7 @@ import random as rnd
 from typing import List
 from PIL import Image
 from sklearn.model_selection import train_test_split
+from torch.utils.data import Dataset, DataLoader
 
 
 def savedImages(imageList: List[List[Image.Image]], fileLists: List[List[str]]):
@@ -306,27 +307,6 @@ class EmotionImages:
         self.plotClassDistribution()
         display()
 
-    '''
-    # split the dataset into training, testing and validation sets
-    def splitData(self, random_state=42):
-        total_images = len(self.getImages())
-        train_size = int(0.7 * total_images)
-        test_size = int(0.15 * total_images)
-        validation_size = total_images - train_size - test_size
-        self.train_images = self.getImages()[:train_size]
-        self.test_images = self.getImages()[train_size:train_size + test_size]
-        self.validation_images = self.getImages()[train_size + test_size:]
-        self.train_labels = [i for i in range(len(self.train_images))]
-        self.test_labels = [i for i in range(len(self.test_images))]
-        self.validation_labels = [i for i in range(len(self.validation_images))]
-        self.train_labels = torch.tensor(self.train_labels)
-        self.test_labels = torch.tensor(self.test_labels)
-        self.validation_labels = torch.tensor(self.validation_labels)
-        self.train_images = torch.tensor(self.train_images)
-        self.test_images = torch.tensor(self.test_images)
-        self.validation_images = torch.tensor(self.validation_images)
-    '''
-
     def splitData(self):
         """
         train_test_split setup was inspired by lab 5:
@@ -371,3 +351,16 @@ class EmotionImages:
 
         # Store Final Result
         self.setDataset(dataset)
+
+
+class ImageDataset(Dataset):
+    def __init__(self, data):
+        self.data = data
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        image = self.data[idx]['image']
+        label = self.data[idx]['label']
+        return image, label
