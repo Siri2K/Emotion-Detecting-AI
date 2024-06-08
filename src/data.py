@@ -5,12 +5,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random as rnd
 
-import torch
-import torch.utils.data as td
-
 from typing import List
 from PIL import Image
 from sklearn.model_selection import train_test_split
+from torch.utils.data import Dataset, DataLoader
 
 
 def savedImages(imageList: List[List[Image.Image]], fileLists: List[List[str]]):
@@ -59,11 +57,6 @@ class EmotionImages:
             'test': {},
             'validation': {}
         }
-        self.__dataLoader: dict = {
-            'train': {},
-            'test': {},
-            'validation': {}
-        }
 
     # Set & Getter
     def setImages(self, image: List[List[Image.Image]]):
@@ -77,10 +70,6 @@ class EmotionImages:
 
     def setDataset(self, dataset: dict):
         self.__dataset = dataset
-        self.__flatten_dataset() # Flatten Dataset
-
-    def setDataLoader(self, dataLoader: dict):
-        self.__dataLoader = dataLoader
 
     def getImages(self) -> List[List[Image.Image]]:
         return self.__images.copy()
@@ -94,31 +83,10 @@ class EmotionImages:
     def getDataset(self) -> dict:
         return self.__dataset.copy()
 
-    def getDataLoader(self) -> dict:
-        return self.__dataLoader.copy()
-
-    # chatgpt
-    def __flatten_dataset(self):
-        self.__flat_dataset = []
-        for label, images in self.__dataset['train'].items():
-            for image in images:
-                self.__flat_dataset.append((image, label))
-
-    # lab 7
-    def __len__(self):
-        return len(self.__flat_dataset)
-
-    def __getitem__(self, index):
-        image, label = self.__flat_dataset[index]
-        image = torch.tensor(np.array(image), dtype= torch.float32)  # Convert PIL image to tensor
-        label_idx = list(self.__dataset['train'].keys()).index(label)  # Convert label to integer index
-        return image, label_idx
-
     # Roles
     def initialize(self):
         self.readImages()  # Gather Image and File Path from every file
         self.splitData()
-        self.dataLoader()
 
     def readImages(self):
         """
@@ -204,7 +172,7 @@ class EmotionImages:
             indexPair.append(rnd.randrange(start=0, stop=len(images)))
             indexPair.append(rnd.randrange(start=0, stop=len(images[indexPair[0]])))
 
-            # Check if Pair Repeats & Get A New Pair
+            # Check if Pair Reapeats & Get A New Pair
             while indexList.count(indexPair) > 0:
                 indexPair.clear()
                 indexPair.append(rnd.randrange(start=0, stop=len(images)))
@@ -384,29 +352,15 @@ class EmotionImages:
         # Store Final Result
         self.setDataset(dataset)
 
-    def dataLoader(self):
-        self.__flatten_dataset()
 
-        class CustomDataset(td.Dataset):
-            def __init__(self, flat_dataset):
-                self.flat_dataset = flat_dataset
+class ImageDataset(Dataset):
+    def __init__(self, data):
+        self.data = data
 
-            def __len__(self):
-                return len(self.flat_dataset)
+    def __len__(self):
+        return len(self.data)
 
-            def __getitem__(self, idx):
-                image, label = self.flat_dataset[idx]
-                image = torch.tensor(np.array(image), dtype=torch.float32)  # Convert PIL image to tensor
-                label_idx = list(set([label for _, label in self.flat_dataset])).index(label)
-                return image, label_idx
-
-        batch_size = 4
-
-        train_data = CustomDataset(self.__flat_dataset)
-        self.__dataLoader['train'] = td.DataLoader(train_data, batch_size=batch_size, shuffle=False, pin_memory=True)
-        self.__dataLoader['test'] = td.DataLoader(train_data, batch_size=batch_size, shuffle=False,
-                                                  pin_memory=True)  # Replace with actual test dataset
-        self.__dataLoader['validation'] = td.DataLoader(train_data, batch_size=batch_size, shuffle=False,
-                                                        pin_memory=True)  # Replace with actual validation dataset
-
-
+    def __getitem__(self, idx):
+        image = self.data[idx]['image']
+        label = self.data[idx]['label']
+        return image, label
