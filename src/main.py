@@ -16,49 +16,10 @@ from src.CNN.CNNModel import CNNModel
 
 from sklearn import metrics
 
-
-# Preprocess Dataset
-def processDataset(imageDictionary: EmotionImages):
-    # Update Dataset
-    batch_size = 64
-    dataset = imageDictionary.getDataset()
-
-    dataLoader: dict = {
-        "train": {},
-        "test": {},
-        "validation": {}
-    }
-
-    # Setup Dataset
-    train_data_list = []
-    for emotion in dataset.get('train'):
-        for item in dataset['train'][emotion]:
-            transformed_image = ToTensor()(item)
-            train_data_list.append({'image': transformed_image, 'label': emotion})
-
-    test_data_list = []
-    for emotion in dataset.get('test'):
-        for item in dataset['test'][emotion]:
-            transformed_image = ToTensor()(item)
-            test_data_list.append({'image': transformed_image, 'label': emotion})
-
-    validation_data_list = []
-    for emotion in dataset.get('validation'):
-        for item in dataset['validation'][emotion]:
-            transformed_image = ToTensor()(item)
-            validation_data_list.append({'image': transformed_image, 'label': emotion})
-
-    dataLoader["train"] = DataLoader(dataset=ImageDataset(train_data_list), batch_size=batch_size, shuffle=False)
-    dataLoader["test"] = DataLoader(dataset=ImageDataset(test_data_list), batch_size=batch_size, shuffle=False)
-    dataLoader["validation"] = DataLoader(dataset=ImageDataset(validation_data_list), batch_size=batch_size,
-                                          shuffle=False)
-
-    return dataLoader
-
-
-def trainCNN(dataLoader: dict, model: Union[CNNModel]):
+def trainCNN(dataLoader: EmotionImages, model: Union[CNNModel]):
     # Set device to GPU if possible
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    train_dataloader, _, _ = dataLoader.getDataLoaders()
 
     # Setup Loss Function and Optimizer
     numEpoch = 10
@@ -71,7 +32,7 @@ def trainCNN(dataLoader: dict, model: Union[CNNModel]):
     acc_list = []
 
     for epoch in range(numEpoch):
-        for batch_idx, (images, labels) in enumerate(dataLoader["train"]):
+        for batch_idx, (images, labels) in enumerate(train_dataloader):
             # Move data to device (GPU if available)
             images = images.to(device)
             labels = torch.tensor([emotion_to_index[label] for label in labels]).to(device)
@@ -98,7 +59,7 @@ def trainCNN(dataLoader: dict, model: Union[CNNModel]):
             if batch_idx % 100 == 0:
                 print(
                     f"Epoch [{epoch + 1}/{numEpoch}], "
-                    f"Batch [{batch_idx + 1}/{len(dataLoader['train'])}],"
+                    f"Batch [{batch_idx + 1}/{len(train_dataloader)}],"
                     f" Loss: {loss.item()}, "
                     f" Accuracy: {(correct / total) * 100}%"
                 )
@@ -106,8 +67,9 @@ def trainCNN(dataLoader: dict, model: Union[CNNModel]):
     train_accuracy(dataLoader, model)
 
 
-def train_accuracy(dataLoader: dict, model: Union[CNNModel]):
+def train_accuracy(dataLoader: EmotionImages, model: Union[CNNModel]):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    train_dataloader, test_dataloader, validation_dataloader = dataLoader.getDataLoaders()
     emotion_to_index = {'Angry': 0, 'Happy': 1, 'Focused': 2, 'Neutral': 3}
     index_to_emotion = {v: k for k, v in emotion_to_index.items()}
     model.eval()
@@ -116,7 +78,7 @@ def train_accuracy(dataLoader: dict, model: Union[CNNModel]):
         total = 0
         all_labels = []
         all_preds = []
-        for images, labels in dataLoader['test']:
+        for images, labels in test_dataloader:
             images = images.to(device)
             labels = torch.tensor([emotion_to_index[label] for label in labels]).to(device)
             outputs = model(images)
@@ -127,42 +89,32 @@ def train_accuracy(dataLoader: dict, model: Union[CNNModel]):
             all_labels.extend(labels.cpu().numpy())
             all_preds.extend(predicted.cpu().numpy())
 
-        print("Test Accuracy of the model on the 300 test images : {} %".format((correct / total) * 100))
+        print("Test Accuracy of the model on the test images : {} %".format((correct / total) * 100))
 
-        # Saving model
-        projectDirectory: str = os.path.dirname(os.path.abspath(__file__))
-        if projectDirectory.endswith("src"):
-            desiredDirectory = os.path.join(os.path.dirname(projectDirectory), "resources")
-        else:
-            desiredDirectory = os.path.join(projectDirectory, "resources")
-
-        torch.save(model.state_dict(), os.path.join(desiredDirectory, "model_location.pth"))
+        model_path = os.path.join(dataLoader.getDataDirectory(), "model_location.pth")
+        torch.save(model.state_dict(), model_path)
 
         confusion(all_labels, all_preds)
 
+def confusion(actual, predicted):
+    # Emotion labels should match the ones used in your emotion_to_index dictionary
+    emotion_labels = ['Angry', 'Happy', 'Focused', 'Neutral']
 
-def confusion(c, p):
-    emotionLabels = ['Angry', 'Focused', 'Happy', 'Neutral']
-    confusion_matrix = metrics.confusion_matrix(c, p)
+    confusion_matrix = metrics.confusion_matrix(actual, predicted)
 
-    cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix=confusion_matrix, display_labels=emotionLabels)
+    cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix=confusion_matrix, display_labels=emotion_labels)
 
     cm_display.plot()
     plt.show()
 
-
 def main():
     # Initialize DataSet
     dataset: EmotionImages = EmotionImages()
-    dataset.initialize()
+    dataset.setup()
 
     # Choose to Either Clean or Visualize Dataset
     if len(sys.argv) > 1:
-        if sys.argv[1] == "--clean":
-            dataset.cleanImages()
-            print("Dataset Cleaned")
-            return
-        elif sys.argv[1] == "--display":
+        if sys.argv[1] == "--display":
             dataset.plotVisuals()
             return
         else:
@@ -172,8 +124,7 @@ def main():
 
     # Initialize CNN
     model: CNNModel = CNNModel()
-    trainCNN(processDataset(dataset), model)
-
+    trainCNN(dataset, model)
 
 if __name__ == '__main__':
     main()

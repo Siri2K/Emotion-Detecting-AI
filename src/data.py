@@ -336,9 +336,9 @@ class EmotionImages:
         validation_dataset = ImageDataset(database['validation'])
 
         # Create DataLoaders
-        train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-        test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
-        validation_dataloader = DataLoader(validation_dataset, batch_size=32, shuffle=False)
+        train_dataloader = DataLoader(train_dataset, batch_size = batchSize, shuffle=True)
+        test_dataloader = DataLoader(test_dataset, batch_size = batchSize, shuffle=False)
+        validation_dataloader = DataLoader(validation_dataset, batch_size = batchSize, shuffle=False)
 
         return train_dataloader,test_dataloader,validation_dataloader
 
@@ -347,7 +347,7 @@ class EmotionImages:
 class ImageDataset(Dataset):
     def __init__(self, dataDict:dict):
         self.data:list = []
-        for key,image in dataDict:
+        for key, image in dataDict:
             transformed_image = ToTensor()(image)
             self.data.append({'image': transformed_image, 'label': key})
 
