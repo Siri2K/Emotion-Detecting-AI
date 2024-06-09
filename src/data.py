@@ -1,42 +1,42 @@
 import os
 import platform
+import random
+
+from typing import Dict, List
 
 import numpy as np
-import matplotlib.pyplot as plt
-import random as rnd
-
-from typing import List
 from PIL import Image
-from sklearn.model_selection import train_test_split
+from matplotlib import pyplot as plt
 from torch.utils.data import Dataset, DataLoader
+from sklearn.model_selection import train_test_split
+from torchvision.transforms import transforms, ToTensor
 
 
-def savedImages(imageList: List[List[Image.Image]], fileLists: List[List[str]]):
+def cleanImage(path) -> Image:
     """
-    For Loop setup using ChatGPT image.save() was set up with the help of
-    https://stackoverflow.com/questions/10607468/how-to-reduce-the-image-file-size-using-pil/13211834#13211834
+        Resize Images and Saving Image
+        https://stackoverflow.com/questions/10607468/how-to-reduce-the-image-file-size-using-pil/13211834#13211834
 
-    :param imageList:
-    :param fileLists:
-    :return:
+        grayImage was setup using https://stackoverflow.com/a/3823822
+        resizedImage wasse tup using https://stackoverflow.com/a/13211834
+
+        :param path:
+        :return:
     """
 
-    for image_list, file_list in zip(imageList, fileLists):
-        for image, file_path in zip(image_list, file_list):
-            image.save(file_path, optimize=True, quality=95)  # Save Images and Optimize Size
+    image = Image.open(path)  # Open Image File
+    if image.size != (336, 336) or image.mode != 'L':
+        image.convert('L').resize((336, 336), Image.LANCZOS)
+        image.save(path)
+    return image
 
 
-def display():
-    plt.show()
-
-
-def gatherRGBOfImages(images: List[Image.Image]):
+def gatherRGBOfImages(images: List[Image.Image]) -> List[int]:
     """
         Formula for intensity was acquired using ChatGPT
     :param images:
     :return:
     """
-
     # Gather the Intensity of every images
     intensity: List[int] = []
     for image in images:
@@ -47,48 +47,61 @@ def gatherRGBOfImages(images: List[Image.Image]):
 class EmotionImages:
     # Constructor
     def __init__(self):
-        super().__init__()
-        # self.emotions: int = 0
-        self.__sampleImages: List[Image.Image] = []
-        self.__images: List[List[Image.Image]] = []
-        self.__file: List[List[str]] = []
-        self.__dataset: dict = {
-            'train': {},
-            'test': {},
-            'validation': {}
-        }
+        self.__dataDirectory: str = ''
+        self.__imageDataSet: Dict[str, List[Image.Image]] = {}
+        self.__imageSplitDataSet: Dict[str, Dict[str, List[Image.Image]]] = {}
+        self.__fileDataSet: Dict[str, List[str]] = {}
 
-    # Set & Getter
-    def setImages(self, image: List[List[Image.Image]]):
-        self.__images = image
+        # Initialize
+        self.saveDataDirectory()
+        self.setup()
 
-    def setSampleImages(self, sampleImage: List[Image.Image]):
-        self.__sampleImages = sampleImage
+    # Set and Getter
+    def setDataDirectory(self, dataDirectory: str):
+        self.__dataDirectory = dataDirectory
 
-    def setFiles(self, file: List[List[str]]):
-        self.__file = file
+    def setImageDataset(self, dataset: Dict[str, List[Image.Image]]):
+        self.__imageDataSet = dataset
 
-    def setDataset(self, dataset: dict):
-        self.__dataset = dataset
+    def setImageSplitDataset(self, dataset: Dict[str, Dict[str, List[Image.Image]]]):
+        self.__imageSplitDataSet = dataset
 
-    def getImages(self) -> List[List[Image.Image]]:
-        return self.__images.copy()
+    def setFileDataset(self, dataset: Dict[str, List[str]]):
+        self.__fileDataSet = dataset
 
-    def getSampleImages(self) -> List[Image.Image]:
-        return self.__sampleImages.copy()
+    def getDataDirectory(self) -> str:
+        return self.__dataDirectory
 
-    def getFiles(self) -> List[List[str]]:
-        return self.__file.copy()
+    def getImageDataset(self) -> Dict[str, List[Image.Image]]:
+        return self.__imageDataSet.copy()
 
-    def getDataset(self) -> dict:
-        return self.__dataset.copy()
+    def getImageSplitDataset(self) -> Dict[str, Dict[str, List[Image.Image]]]:
+        return self.__imageSplitDataSet.copy()
 
-    # Roles
-    def initialize(self):
-        self.readImages()  # Gather Image and File Path from every file
+    def getFileDataset(self) -> Dict[str, List[str]]:
+        return self.__fileDataSet.copy()
+
+    # Role
+    def setup(self):
+        self.setupFullData()
         self.splitData()
 
-    def readImages(self):
+    def saveDataDirectory(self):
+        # Save Data Directory
+        projectDirectory: str = os.path.dirname(os.path.abspath(__file__))
+        if projectDirectory.endswith("src"):
+            desiredDirectory = os.path.join(os.path.dirname(projectDirectory), "resources")
+        else:
+            desiredDirectory = os.path.join(projectDirectory, "resources")
+
+        # Initialize
+        self.setDataDirectory(desiredDirectory)
+
+        # Delete Unusable
+        del projectDirectory
+        del desiredDirectory
+
+    def setupFullData(self):
         """
             for root, directory, files in os.walk(desiredDirectory)
                 for file in files
@@ -100,158 +113,142 @@ class EmotionImages:
         :return:
         """
 
-        # Get Desired Directory
-        projectDirectory: str = os.path.dirname(os.path.abspath(__file__))
-        if projectDirectory.endswith("src"):
-            desiredDirectory = os.path.join(os.path.dirname(projectDirectory), "resources")
-        else:
-            desiredDirectory = os.path.join(projectDirectory, "resources")
+        # Initialize Data
+        imageDataDict: Dict[str, List[Image.Image]] = {}
+        fileDataDict: Dict[str, List[str]] = {}
+        imageDataSet: List[Image.Image] = []
+        fileDataSet: List[str] = []
 
-        # Obtain All Image files
-        savedFileList: List[List[str]] = []
-        imageList: List[List[Image.Image]] = []
-        for root, directory, files in os.walk(desiredDirectory):
-            savedFile: List[str] = []
-            images: List[Image.Image] = []
+        # Gather Images and File List
+        for root, directory, files in os.walk(self.getDataDirectory()):
             for file in files:
+                # Gather Files & Images
                 if file.endswith(".jpg") or file.endswith(".png"):
                     path: str = os.path.join(root, file)
-                    savedFile.append(path)
-                    images.append(Image.open(path))
+                    fileDataSet.append(path)
+                    imageDataSet.append(cleanImage(path))
 
-            if len(savedFile) > 0:
-                savedFileList.append(savedFile)
+            # Store Them
+            if len(fileDataSet) > 0 and len(imageDataSet) > 0:
+                folder = root.split("\\")[-1] if platform.system() == "Windows" else root.split("/")[-1]
+                fileDataDict[folder] = fileDataSet.copy()
+                imageDataDict[folder] = imageDataSet.copy()
 
-            if len(images) > 0:
-                imageList.append(images)
+                # Clear Data
+                fileDataSet.clear()
+                imageDataSet.clear()
 
-        # Store File & Image List
-        self.setFiles(savedFileList)
-        self.setImages(imageList)
+        # Setup Data
+        self.setFileDataset(fileDataDict.copy())
+        self.setImageDataset(imageDataDict.copy())
 
-    def cleanImages(self):
+        # Delete Ununsed
+        del imageDataDict
+        del fileDataDict
+        del imageDataSet
+        del fileDataSet
+
+    def splitData(self):
         """
-            grayImage: Image.Image = face.convert("L")  # L means gray coloring
-            resizedImage: Image.Image = grayImage.resize((336, 336), Image.LANCZOS)
+        train_test_split without shuffling was taken by:
+        https://stackoverflow.com/questions/43838052/how-to-get-a-non-shuffled-train-test-split-in-sklearn
 
-            grayImage was se tup using https://stackoverflow.com/a/3823822
-            resizedImage was se tup using https://stackoverflow.com/a/13211834
         :return:
         """
 
-        # Get Images
-        imageList: List[List[Image.Image]] = self.getImages()
-        newImageList: List[List[Image.Image]] = []
+        # Initialize
+        data = self.getImageDataset()
+        splitData: dict = {
+            'train': {
+                'Angry': [],
+                'Focused': [],
+                'Happy': [],
+                'Neutral': []
+            },
+            'test': {
+                'Angry': [],
+                'Focused': [],
+                'Happy': [],
+                'Neutral': []
+            },
+            'validation': {
+                'Angry': [],
+                'Focused': [],
+                'Happy': [],
+                'Neutral': []
+            }
+        }
 
-        # Generate Images
-        for faceList in imageList:
-            newImages: List[Image.Image] = []
-            for face in faceList:
-                grayImage: Image.Image = face.convert("L")  # GRayScale Images using "L" command
+        # Split Data
+        for key, images in data.items():
+            # Full image list setup to 70:30. Training is the 70%
+            train, validationAndTest = train_test_split(
+                images,
+                test_size=0.3,
+                shuffle=False
+            )
 
-                # Lanczos interpolation for quality
-                # Resize every pic to 336x336 and use
-                resizedImage: Image.Image = grayImage.resize((336, 336), Image.LANCZOS)
+            # 30% non training image list setup to 50:50 for validation and test
+            validation, test = train_test_split(
+                validationAndTest,
+                test_size=0.5,
+                shuffle=False
+            )
 
-                newImages.append(resizedImage)
-            newImageList.append(newImages)
+            # Store Split Data
+            splitData['train'][key] = train
+            splitData['validation'][key] = validation
+            splitData['test'][key] = test
 
-        # Save New Images and Files
-        self.setImages(newImageList)
-        savedImages(self.getImages(), self.getFiles())  # Save new images into their respective files
+        # Setup and delete unused
+        self.setImageSplitDataset(splitData.copy())
+        del splitData
+        del data
 
-    def gatherImageIndexes(self) -> List[List[int]]:
-        # Initialize data
-        images: List[List[Image]] = self.getImages()
+    def plotVisuals(self):
+        self.plotSampleImageGrid()
+        self.plotClassDistribution()
+        self.plotPixelIntensityDistributionClass()
+        self.plotPixelIntensityDistributionClassForSample()
+        plt.show()
 
-        # Get Indexes of images to display
-        indexList: List[List[int]] = []
-        indexPair: List[int] = []
+    def gatherSampleImagesIndexes(self) -> List[list]:
+        # Initialize
+        images: dict = self.getImageDataset()
+        keys: list = list(images.keys())
+        sampleImages: List[list] = []
+
+        # Gather Sample
         for i in range(15):
-            # Get Pairs
-            indexPair.append(rnd.randrange(start=0, stop=len(images)))
-            indexPair.append(rnd.randrange(start=0, stop=len(images[indexPair[0]])))
+            chosenKey: str = random.choice(keys)
+            sampleImages.append(
+                [
+                    chosenKey,
+                    random.randint(0, len(images[chosenKey]) - 1)
+                ]
+            )
+        return sampleImages
 
-            # Check if Pair Reapeats & Get A New Pair
-            while indexList.count(indexPair) > 0:
-                indexPair.clear()
-                indexPair.append(rnd.randrange(start=0, stop=len(images)))
-                indexPair.append(rnd.randrange(start=0, stop=len(images[indexPair[0]])))
+    def plotSampleImageGrid(self):
+        # Gather Inputs
+        indexList: List = self.gatherSampleImagesIndexes()
+        images: dict = self.getImageDataset()
 
-            # Add them to list and clear
-            indexList.append(indexPair.copy())
-            indexPair.clear()
-
-        return indexList
-
-    def plotImageGrid(self, indexList: List[List[int]]):
-        """
-        Lines 179 and Lines 180 were set up using ChatGPT. Mainly to separate titles between main plot and subplot
-        axImage setup was configured with the help of ChatGPT and
-        https://stackoverflow.com/questions/41793931/plotting-images-side-by-side-using-matplotlib
-
-        :param indexList:
-        :return:
-        """
-
-        # Initialize data
-        sampleImages: List[Image] = []
-        images: List[List[Image]] = self.getImages()
-
-        # Setup Grid Images
+        # Initialize Grid
         nRows: int = 3
         nColumns: int = 5
 
+        # Setup Figure
         figure, axImages = plt.subplots(nRows, nColumns, figsize=(6, 8))
         for i in range(nRows):
             for j in range(nColumns):
-                # Get Index Pair
-                indexPair: List[int] = indexList.pop()
-
-                # Get Image title from Filepath
-                if platform.system() == "Windows":
-                    sampleFilepath = self.getFiles()[indexPair[0]].pop().split("\\")
-                else:
-                    sampleFilepath = self.getFiles()[indexPair[0]].pop().split("/")
-
-                sampleImages.append(images[indexPair[0]][indexPair[1]])
-                axImages[i, j].imshow(images[indexPair[0]][indexPair[1]], cmap='gray')
+                indexPair = indexList.pop()
+                axImages[i, j].imshow(images.get(indexPair[0])[indexPair[1]], cmap='gray')
                 axImages[i, j].axis('off')
-                axImages[i, j].set_title(sampleFilepath[-2])
+                axImages[i, j].set_title(indexPair[0])
 
-        # Setup Plots
-        self.setSampleImages(sampleImages)
         figure.suptitle("Sample Image Grid", fontsize=16)
         figure.tight_layout()
-
-    # Pixel Intensity Distribution per Class
-    def pixelIntensityDistributionClass(self):
-
-        image_List = self.getImages()
-
-        index = 0
-
-        for image_group in image_List:
-            # from GeekforGeeks
-            """ https: // www.geeksforgeeks.org / opencv - python - program - analyze - image - using - histogram /
-            # alternative way to find histogram of an image 
-                plt.hist(img.ravel(),256,[0,256]) 
-                plt.show() 
-            """
-            # Get Image title from Filepath
-            if platform.system() == "Windows":
-                sampleFilepath = self.getFiles()[index].pop().split("\\")
-            else:
-                sampleFilepath = self.getFiles()[index].pop().split("/")
-
-            pixel_values = gatherRGBOfImages(image_group)
-            plt.figure()
-            plt.hist(pixel_values, bins=256, alpha=0.7, edgecolor='black')
-
-            plt.xlabel('Pixel Intensity')
-            plt.ylabel('Frequency')
-            plt.title(f'Histogram for Pixel Intensity of {sampleFilepath[-2]} Images')
-            index += 1
 
     def plotClassDistribution(self):
         """
@@ -261,101 +258,99 @@ class EmotionImages:
         """
 
         # Initialize Variables
-        images = self.getImages()
-        X = []
+        images = self.getImageDataset()
+
+        # Setup X-Y
+        X: list = list(images.keys())
+        X_Axis: np.ndarray = np.arange(len(X))
         Y = []
+        for key in X:
+            Y.append(len(images.get(key)))
 
-        # Setup X and Y
-        for i in range(len(images)):
-            if platform.system() == "Windows":
-                folder = self.getFiles()[i].pop().split("\\")
-            else:
-                folder = self.getFiles()[i].pop().split("/")
-            X.append(folder[-2])
-            Y.append(len(images[i]))
-
-        X_axis = np.arange(len(X))
-
+        # Setup Plot
         plt.figure()
-        plt.bar(X_axis, Y, 0.4)
-
+        plt.bar(X_Axis, Y, 0.4)
         for i in range(len(X)):
             plt.text(i, Y[i] + 5, str(Y[i]), ha='center', va='bottom')
-
-        plt.xticks(X_axis, X)
+        plt.xticks(X_Axis, X)
         plt.xlabel("Classes")
         plt.ylabel("Number of Images")
         plt.title("Number of Images in each class")
         plt.ylim(0, 600)
 
-    def plotPixelIntensityForSample(self):
-        # Gather Red, Green , Blue Intensities
-        intensity = gatherRGBOfImages(self.getSampleImages())
+    def plotPixelIntensityDistributionClassForSample(self):
+        # Gather Inputs
+        indexList: List = self.gatherSampleImagesIndexes()
+        imageDict: dict = self.getImageDataset()
+        imageList: List = []
 
-        # Create Histograms for each Color Intensity
+        # Gather Pixel Distribution
+        for key, index in indexList:
+            imageList.append(
+                imageDict.get(key)[index]
+            )
+
+        # Setup Histogram
+        pixel_values = gatherRGBOfImages(imageList)
+
         plt.figure()
-        plt.hist(intensity, alpha=0.7, edgecolor='black')
-        plt.title("Sample Image Pixel Intensity", fontsize=16)
-        plt.xlabel("Pixel Intensity")
-        plt.ylabel("Average Frequency")
-        plt.tight_layout()
+        plt.hist(pixel_values, alpha=0.7, edgecolor='black')
 
-    def plotVisuals(self):
-        self.plotImageGrid(self.gatherImageIndexes())
-        self.plotPixelIntensityForSample()
-        self.pixelIntensityDistributionClass()
-        self.plotClassDistribution()
-        display()
+        plt.xlabel('Pixel Intensity')
+        plt.ylabel('Frequency')
+        plt.title(f'Histogram for Pixel Intensity of Sample Images')
 
-    def splitData(self):
+    def plotPixelIntensityDistributionClass(self):
         """
-        train_test_split setup was inspired by lab 5:
-        https://moodle.concordia.ca/moodle/pluginfile.php/6908483/mod_resource/content/9/lab05-sol.pdf
+            # from GeekforGeeks
+                https: // www.geeksforgeeks.org / opencv - python - program - analyze - image - using - histogram /
+                alternative way to find histogram of an image
+                    plt.hist(img.ravel(),256,[0,256])
+                    plt.show()
 
-        train_test_split without shuffling was taken by:
-        https://stackoverflow.com/questions/43838052/how-to-get-a-non-shuffled-train-test-split-in-sklearn
-
-        :return:
+            :return:
         """
 
-        # Gather Image and FileList
-        imageSet = self.getImages()
-        fileSet = self.getFiles()
-        dataset = self.getDataset()
+        # Initialize Data
+        imageDict: dict = self.getImageDataset()
 
-        # Split Files with scikit-learn
-        for images, files in zip(imageSet, fileSet):
-            # Get Image title from Filepath
-            if platform.system() == "Windows":
-                emotion = files.pop().split("\\")[-2]
-            else:
-                emotion = files.pop().split("/")[-2]
+        # Gather Pixel Distribution
+        for key, images in imageDict.items():
+            pixel_values = gatherRGBOfImages(images)
 
-            # Split into Training Testing & Validation (Training : 70%, Testing: 15%, Validation: 15%)
-            trainImages, testAndValidationImages = train_test_split(
-                images,
-                test_size=0.3,
-                shuffle=False
-            )  # Training: 70%, Test And validation Combined = 30%
+            plt.figure()
+            plt.hist(pixel_values, alpha=0.7, edgecolor='black')
 
-            testImages, validationImages = train_test_split(
-                testAndValidationImages,
-                test_size=0.5,
-                shuffle=False
-            )  # Test: 50%, Validation Combined = 50%
+            plt.xlabel('Pixel Intensity')
+            plt.ylabel('Frequency')
+            plt.title(f'Histogram for Pixel Intensity of {key} Images')
 
-            # Store within Dataset
-            dataset['train'][emotion] = trainImages
-            dataset['test'][emotion] = testImages
-            dataset['validation'][emotion] = validationImages
+    def getDataLoaders(self):
+        # Update Dataset
+        batchSize:int = 32
+        database:dict = self.getImageSplitDataset()
 
-        # Store Final Result
-        self.setDataset(dataset)
+        # Setup Dataset
+        train_dataset = ImageDataset(database['train'])
+        test_dataset = ImageDataset(database['test'])
+        validation_dataset = ImageDataset(database['validation'])
+
+        # Create DataLoaders
+        train_dataloader = DataLoader(train_dataset, batch_size = batchSize, shuffle=True)
+        test_dataloader = DataLoader(test_dataset, batch_size = batchSize, shuffle=False)
+        validation_dataloader = DataLoader(validation_dataset, batch_size = batchSize, shuffle=False)
+
+        return train_dataloader,test_dataloader,validation_dataloader
+
 
 
 class ImageDataset(Dataset):
-    def __init__(self, data):
-        self.data = data
+    def __init__(self, dataDict:dict):
+        self.data:list = []
+        for key,images in dataDict.items():
+            for image in images:
+                transformed_image = ToTensor()(image)
+                self.data.append({'image': transformed_image, 'label': key})
 
     def __len__(self):
         return len(self.data)
