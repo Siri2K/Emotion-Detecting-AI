@@ -1,22 +1,23 @@
 import os
 import sys
+from typing import Union
 
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.optim as optim
-
-import matplotlib.pyplot as plt
-
-from typing import Union
-from torchvision.transforms import transforms, ToTensor
-from torch.utils.data import DataLoader
-
-from data import EmotionImages, ImageDataset
-from src.CNN.CNNModel import CNNModel
-
 from sklearn import metrics
 
+from data import EmotionImages
+from src.CNN.CNNModel import CNNModel
+
+# To calculate time
+import time
+
+
 def trainCNN(dataLoader: EmotionImages, model: Union[CNNModel]):
+    start = time.time()
+
     # Set device to GPU if possible
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_dataloader, _, _ = dataLoader.getDataLoaders()
@@ -64,10 +65,13 @@ def trainCNN(dataLoader: EmotionImages, model: Union[CNNModel]):
                     f" Accuracy: {(correct / total) * 100}%"
                 )
 
+    print(f"Training CNN Time: {time.time() - start}")
     train_accuracy(dataLoader, model)
 
 
 def train_accuracy(dataLoader: EmotionImages, model: Union[CNNModel]):
+    start = time.time()
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_dataloader, test_dataloader, validation_dataloader = dataLoader.getDataLoaders()
     emotion_to_index = {'Angry': 0, 'Happy': 1, 'Focused': 2, 'Neutral': 3}
@@ -94,9 +98,13 @@ def train_accuracy(dataLoader: EmotionImages, model: Union[CNNModel]):
         model_path = os.path.join(dataLoader.getDataDirectory(), "model_location.pth")
         torch.save(model.state_dict(), model_path)
 
+        print(f"Training Accuracy Time: {time.time() - start}")
         confusion(all_labels, all_preds)
 
+
 def confusion(actual, predicted):
+    start = time.time()
+
     # Emotion labels should match the ones used in your emotion_to_index dictionary
     emotion_labels = ['Angry', 'Happy', 'Focused', 'Neutral']
 
@@ -104,10 +112,14 @@ def confusion(actual, predicted):
 
     cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix=confusion_matrix, display_labels=emotion_labels)
 
+    print(f"Confusion Matrix Plotting Time: {time.time() - start}")
     cm_display.plot()
     plt.show()
 
+
 def main():
+    start = time.time()
+
     # Initialize DataSet
     dataset: EmotionImages = EmotionImages()
     dataset.setup()
@@ -123,8 +135,10 @@ def main():
             return
 
     # Initialize CNN
+    print(f"Dataset Setup Time: {time.time() - start}")
     model: CNNModel = CNNModel()
     trainCNN(dataset, model)
+
 
 if __name__ == '__main__':
     main()
