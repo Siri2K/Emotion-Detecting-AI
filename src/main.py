@@ -8,19 +8,18 @@ import torch.nn as nn
 import torch.optim as optim
 from sklearn import metrics
 
-from data import EmotionImages, ImageDataset
+from data import EmotionImages, ImageDataset, DataLoader
 from src.CNN.CNNModel import CNNModel
 
 # To calculate time
 import time
 
 
-def trainCNN(dataLoader: EmotionImages, model: Union[CNNModel]):
+def trainCNN(dataLoader: DataLoader, model: Union[CNNModel]):
     start = time.time()
 
     # Set device to GPU if possible
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    train_dataloader, _, _ = dataLoader.getDataLoaders()
 
     # Setup Loss Function and Optimizer
     numEpoch = 10
@@ -34,7 +33,7 @@ def trainCNN(dataLoader: EmotionImages, model: Union[CNNModel]):
     # Setup Labels
     for epoch in range(numEpoch):
         model.train()  # Ensure the model is in training mode
-        for batch_idx, (images, labels) in enumerate(train_dataloader):
+        for batch_idx, (images, labels) in enumerate(dataLoader):
             # Move data to device (GPU if available)
             images = images.to(device)
             labels = torch.tensor([emotion_to_index[label] for label in labels]).to(device)
@@ -57,20 +56,17 @@ def trainCNN(dataLoader: EmotionImages, model: Union[CNNModel]):
                 correct = (predicted == labels).sum().item()
                 print(
                     f"Epoch [{epoch + 1}/{numEpoch}], "
-                    f"Batch [{batch_idx + 1}/{len(train_dataloader)}],"
                     f" Loss: {loss.item()}, "
                     f" Accuracy: {(correct / total) * 100}%"
                 )
 
     print(f"Training CNN Time: {time.time() - start}")
-    train_accuracy(dataLoader, model)
 
 
-def train_accuracy(dataLoader: EmotionImages, model: Union[CNNModel]):
+def train_accuracy(dataLoader: DataLoader, model: Union[CNNModel], savePath:str):
     start = time.time()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    _, test_dataloader, _ = dataLoader.getDataLoaders()
     emotion_to_index = {'Angry': 0, 'Happy': 1, 'Focused': 2, 'Neutral': 3}
     model.eval()  # Ensure the model is in evaluation mode
     with torch.no_grad():
@@ -78,21 +74,19 @@ def train_accuracy(dataLoader: EmotionImages, model: Union[CNNModel]):
         total = 0
         all_labels = []
         all_preds = []
-        for images, labels in test_dataloader:
+        for images, labels in dataLoader:
             images = images.to(device)
             labels = torch.tensor([emotion_to_index[label] for label in labels]).to(device)
             outputs = model(images)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
-
             all_labels.extend(labels.cpu().numpy())
             all_preds.extend(predicted.cpu().numpy())
 
         print("Test Accuracy of the model on the test images : {} %".format((correct / total) * 100))
 
-        model_path = os.path.join(dataLoader.getDataDirectory(), "model_location.pth")
-        torch.save(model.state_dict(), model_path)
+        torch.save(model.state_dict(), savePath)
 
         print(f"Training Accuracy Time: {time.time() - start}")
         confusion(all_labels, all_preds)
@@ -137,8 +131,13 @@ def main():
 
     # Initialize CNN
     print(f"Dataset Setup Time: {time.time() - start}")
+
+    # Gather DataLoaders
+    train_dataloader, test_dataloader, validation_dataloader = dataset.getDataLoaders()
+
     model = CNNModel()
-    trainCNN(dataset, model)
+    trainCNN(train_dataloader, model)
+    train_accuracy(test_dataloader, model, os.path.join(dataset.getDataDirectory(), "model_location.pth"))
 
 
 if __name__ == '__main__':

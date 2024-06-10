@@ -327,8 +327,8 @@ class EmotionImages:
 
     def getDataLoaders(self):
         # Update Dataset
-        batchSize:int = 32
-        database:dict = self.getImageSplitDataset()
+        batchSize: int = 32
+        database: dict = self.getImageSplitDataset()
 
         # Setup Dataset
         train_dataset = ImageDataset(database['train'])
@@ -336,12 +336,11 @@ class EmotionImages:
         validation_dataset = ImageDataset(database['validation'])
 
         # Create DataLoaders
-        train_dataloader = DataLoader(train_dataset, batch_size = batchSize, shuffle=True)
-        test_dataloader = DataLoader(test_dataset, batch_size = batchSize, shuffle=False)
-        validation_dataloader = DataLoader(validation_dataset, batch_size = batchSize, shuffle=False)
+        train_dataloader = DataLoader(train_dataset, batch_size=batchSize, shuffle=True)
+        test_dataloader = DataLoader(test_dataset, batch_size=batchSize, shuffle=False)
+        validation_dataloader = DataLoader(validation_dataset, batch_size=batchSize, shuffle=False)
 
-        return train_dataloader,test_dataloader,validation_dataloader
-
+        return train_dataloader, test_dataloader, validation_dataloader
 
 
 class ImageDataset(Dataset):
