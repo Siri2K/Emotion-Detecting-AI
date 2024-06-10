@@ -10,12 +10,15 @@ from sklearn import metrics
 
 from data import EmotionImages, ImageDataset, DataLoader
 from src.CNN.CNNModel import CNNModel
+from src.CNN.CNNVariant1 import CNNVariant1
+from src.CNN.CNNVariant2 import CNNVariant2
 
 # To calculate time
 import time
 
 
-def trainCNN(dataLoader: DataLoader, model: Union[CNNModel]):
+
+def trainCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVariant2],  savePath:str):
     start = time.time()
 
     # Set device to GPU if possible
@@ -23,8 +26,9 @@ def trainCNN(dataLoader: DataLoader, model: Union[CNNModel]):
 
     # Setup Loss Function and Optimizer
     numEpoch = 10
-    criterion = nn.CrossEntropyLoss()
     model = model.to(device=device)
+    # model.load_state_dict(torch.load(savePath))
+    criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     # Setup Predicted
@@ -135,9 +139,18 @@ def main():
     # Gather DataLoaders
     train_dataloader, test_dataloader, validation_dataloader = dataset.getDataLoaders()
 
-    model = CNNModel()
-    trainCNN(train_dataloader, model)
-    train_accuracy(test_dataloader, model, os.path.join(dataset.getDataDirectory(), "model_location.pth"))
+    saveFile:str = ''
+    model = CNNVariant1()
+
+    if isinstance(model, CNNModel):
+        saveFile:str = "model.pth"
+    elif isinstance(model, CNNVariant1):
+        saveFile:str = "variant1.pth"
+    elif isinstance(model, CNNVariant2):
+        saveFile:str = "variant2.pth"
+
+    trainCNN(train_dataloader, model, os.path.join(dataset.getDataDirectory(), saveFile))
+    train_accuracy(test_dataloader, model, os.path.join(dataset.getDataDirectory(), saveFile))
 
 
 if __name__ == '__main__':
