@@ -1,39 +1,36 @@
 import torch.nn as nn
 
-from src.CNN.CNNModel import CNNModel,OrderedDict,List
+from src.CNN.CNNModel import CNNModel
 
 
 class CNNVariant1(CNNModel):
     def __init__(self):
         super(CNNVariant1, self).__init__()
-        self.__layers = None
-        self.__fcLayer = None
 
-    def setup(self, inChannel: List[int], outChannel: List[int]):
-        kernelSize: int = 3
-        padding: int = 1
-        stride: int = 1
+        # Define the layers of the CNN
+        self.conv1 = nn.Conv2d(1, 4, kernel_size=5, stride=1, padding=1)
+        self.relu1 = nn.ReLU()
+        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        # Create Sequential Layer
-        layers: OrderedDict = OrderedDict()
-        fcLayers: OrderedDict = OrderedDict()
+        self.conv2 = nn.Conv2d(4, 8, kernel_size=5, stride=1, padding=1)
+        self.relu2 = nn.ReLU()
+        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        # Create Arguments for Sequential Layers
-        for i in range(len(outChannel)):
-            layers[f'conv{i}'] = nn.Conv2d(in_channels=inChannel[i], out_channels=outChannel[i], kernel_size=kernelSize,
-                                           padding=1)
-            layers[f'batch{i}'] = nn.BatchNorm2d(outChannel[i])
-            layers[f'relu{i}'] = nn.LeakyReLU(inplace=True)
-            layers[f'maxpool{i}'] = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.conv3 = nn.Conv2d(8, 16, kernel_size=5, stride=1, padding=1)
+        self.relu3 = nn.ReLU()
+        self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        # Create Arguments for FC Layers
-        for i in range(len(outChannel)):
-            # Apply Formula to find Convolution Sizes
-            layerSize: int = int((inChannel[i] - kernelSize + 2 * padding) / stride) + 1
-            fcLayers[f'Linear{i}'] = nn.Linear(
-                in_features=32 * layerSize * layerSize,
-                out_features=4)
+        self.conv4 = nn.Conv2d(16, 32, kernel_size=5, stride=1, padding=1)
+        self.relu4 = nn.ReLU()
+        self.pool4 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        # Setup Convolution and FC Layer
-        self.setLayers(nn.Sequential(layers))
-        self.setFCLayers(nn.Sequential(fcLayers))
+        self.fc = nn.Linear(32 * 19 * 19, 4)  # Assuming 336x336 input size and 4 output classes
+
+    def forward(self, x):
+        x = self.pool1(self.relu1(self.conv1(x)))
+        x = self.pool2(self.relu2(self.conv2(x)))
+        x = self.pool3(self.relu3(self.conv3(x)))
+        x = self.pool4(self.relu4(self.conv4(x)))
+        x = x.view(x.size(0), -1)
+        x = self.fc(x)
+        return x

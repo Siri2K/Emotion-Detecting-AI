@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.optim as optim
 from sklearn import metrics
 
-from data import EmotionImages
+from data import EmotionImages, ImageDataset
 from src.CNN.CNNModel import CNNModel
 
 # To calculate time
@@ -25,14 +25,15 @@ def trainCNN(dataLoader: EmotionImages, model: Union[CNNModel]):
     # Setup Loss Function and Optimizer
     numEpoch = 10
     criterion = nn.CrossEntropyLoss()
-    model = CNNModel().to(device=device)
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    model = model.to(device=device)
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+    # Setup Predicted
     emotion_to_index = {'Angry': 0, 'Happy': 1, 'Focused': 2, 'Neutral': 3}
 
-    loss_list = []
-    acc_list = []
-
+    # Setup Labels
     for epoch in range(numEpoch):
+        model.train()  # Ensure the model is in training mode
         for batch_idx, (images, labels) in enumerate(train_dataloader):
             # Move data to device (GPU if available)
             images = images.to(device)
@@ -43,21 +44,17 @@ def trainCNN(dataLoader: EmotionImages, model: Union[CNNModel]):
 
             # Calculate loss
             loss = criterion(outputs, labels)
-            loss_list.append(loss.item())
 
             # Backward pass and optimization
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-            # Train accuracy
-            total = labels.size(0)
-            _, predicted = torch.max(outputs.data, 1)
-            correct = (predicted == labels).sum().item()
-            acc_list.append(correct / total)
-
             # Print progress
             if batch_idx % 100 == 0:
+                total = labels.size(0)
+                _, predicted = torch.max(outputs.data, 1)
+                correct = (predicted == labels).sum().item()
                 print(
                     f"Epoch [{epoch + 1}/{numEpoch}], "
                     f"Batch [{batch_idx + 1}/{len(train_dataloader)}],"
@@ -73,10 +70,9 @@ def train_accuracy(dataLoader: EmotionImages, model: Union[CNNModel]):
     start = time.time()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    train_dataloader, test_dataloader, validation_dataloader = dataLoader.getDataLoaders()
+    _, test_dataloader, _ = dataLoader.getDataLoaders()
     emotion_to_index = {'Angry': 0, 'Happy': 1, 'Focused': 2, 'Neutral': 3}
-    index_to_emotion = {v: k for k, v in emotion_to_index.items()}
-    model.eval()
+    model.eval()  # Ensure the model is in evaluation mode
     with torch.no_grad():
         correct = 0
         total = 0
@@ -103,15 +99,20 @@ def train_accuracy(dataLoader: EmotionImages, model: Union[CNNModel]):
 
 
 def confusion(actual, predicted):
+    """
+    # w3 school  https://www.w3schools.com/python/python_ml_confusion_matrix.asp
+
+    :param actual:
+    :param predicted:
+    :return:
+    """
+
     start = time.time()
-
-    # Emotion labels should match the ones used in your emotion_to_index dictionary
     emotion_labels = ['Angry', 'Happy', 'Focused', 'Neutral']
-
+    print(f"Actual labels: {actual}")
+    print(f"Predicted labels: {predicted}")
     confusion_matrix = metrics.confusion_matrix(actual, predicted)
-
     cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix=confusion_matrix, display_labels=emotion_labels)
-
     print(f"Confusion Matrix Plotting Time: {time.time() - start}")
     cm_display.plot()
     plt.show()
@@ -121,7 +122,7 @@ def main():
     start = time.time()
 
     # Initialize DataSet
-    dataset: EmotionImages = EmotionImages()
+    dataset = EmotionImages()
     dataset.setup()
 
     # Choose to Either Clean or Visualize Dataset
@@ -136,7 +137,7 @@ def main():
 
     # Initialize CNN
     print(f"Dataset Setup Time: {time.time() - start}")
-    model: CNNModel = CNNModel()
+    model = CNNModel()
     trainCNN(dataset, model)
 
 
