@@ -26,9 +26,12 @@ def trainCNN(dataLoader: EmotionImages, model: Union[CNNModel]):
     numEpoch = 10
     criterion = nn.CrossEntropyLoss()
     model = model.to(device=device)
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+    # Setup Predicted
     emotion_to_index = {'Angry': 0, 'Happy': 1, 'Focused': 2, 'Neutral': 3}
 
+    # Setup Labels
     for epoch in range(numEpoch):
         model.train()  # Ensure the model is in training mode
         for batch_idx, (images, labels) in enumerate(train_dataloader):
@@ -94,8 +97,16 @@ def train_accuracy(dataLoader: EmotionImages, model: Union[CNNModel]):
         print(f"Training Accuracy Time: {time.time() - start}")
         confusion(all_labels, all_preds)
 
-#w3 school  https://www.w3schools.com/python/python_ml_confusion_matrix.asp
+
 def confusion(actual, predicted):
+    """
+    # w3 school  https://www.w3schools.com/python/python_ml_confusion_matrix.asp
+
+    :param actual:
+    :param predicted:
+    :return:
+    """
+
     start = time.time()
     emotion_labels = ['Angry', 'Happy', 'Focused', 'Neutral']
     print(f"Actual labels: {actual}")
@@ -105,7 +116,6 @@ def confusion(actual, predicted):
     print(f"Confusion Matrix Plotting Time: {time.time() - start}")
     cm_display.plot()
     plt.show()
-
 
 
 def main():
