@@ -345,12 +345,12 @@ class EmotionImages:
 
 
 class ImageDataset(Dataset):
-    def __init__(self, dataDict:dict):
-        self.data:list = []
-        for key,images in dataDict.items():
+    def __init__(self, dataDict: Dict[str, List[Image.Image]]):
+        self.data = []
+        for label, images in dataDict.items():
             for image in images:
                 transformed_image = ToTensor()(image)
-                self.data.append({'image': transformed_image, 'label': key})
+                self.data.append({'image': transformed_image, 'label': label})
 
     def __len__(self):
         return len(self.data)
