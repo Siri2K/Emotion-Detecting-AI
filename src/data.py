@@ -90,9 +90,9 @@ class EmotionImages:
         # Save Data Directory
         projectDirectory: str = os.path.dirname(os.path.abspath(__file__))
         if projectDirectory.endswith("src"):
-            desiredDirectory = os.path.join(os.path.dirname(projectDirectory), "resources")
+            desiredDirectory = os.path.join(os.path.dirname(projectDirectory))
         else:
-            desiredDirectory = os.path.join(projectDirectory, "resources")
+            desiredDirectory = os.path.join(projectDirectory)
 
         # Initialize
         self.setDataDirectory(desiredDirectory)
@@ -120,7 +120,7 @@ class EmotionImages:
         fileDataSet: List[str] = []
 
         # Gather Images and File List
-        for root, directory, files in os.walk(self.getDataDirectory()):
+        for root, directory, files in os.walk(os.path.join(self.getDataDirectory(), "resources")):
             for file in files:
                 # Gather Files & Images
                 if file.endswith(".jpg") or file.endswith(".png"):
