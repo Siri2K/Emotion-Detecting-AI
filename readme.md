@@ -37,11 +37,10 @@ execute the entire program.
     > conda install --file libraries.txt
 
 5. Enter the following commands to perform the following:
-   - Clean the dataset (On Linux or Mac)
-        > python src/main.py --clean
-   - Clean the dataset (On Windows)
-        > python src\main.py --clean
    - Visualize the dataset (On Linux or Mac)
         > python src/main.py --display
    - Visualize the dataset (On Windows)
         > python src\main.py --display
+   
+   - Train and Test CNN (On Linux or Mac)
+        > python src/main.py
