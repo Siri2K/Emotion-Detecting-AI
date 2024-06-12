@@ -3,6 +3,7 @@ import sys
 from typing import Union
 
 import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -12,6 +13,8 @@ from data import EmotionImages, DataLoader
 from src.CNN.CNNModel import CNNModel
 from src.CNN.CNNVariant1 import CNNVariant1
 from src.CNN.CNNVariant2 import CNNVariant2
+
+from sklearn.metrics import recall_score, precision_score, f1_score
 
 
 def trainCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVariant2], device: torch.device,
@@ -31,7 +34,7 @@ def trainCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVari
 
     # Load Saved Model if exists
     if os.path.exists(savePath):
-        print(f"Using Saved Model {modelInst}")
+        print(f"Using Saved {modelInst}")
         model.load_state_dict(torch.load(savePath))
     else:
         print(f"Creating New {modelInst}")
@@ -122,6 +125,25 @@ def testCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVaria
         # Test Accuracy
         print(f"Test Accuracy : {(correct / total) * 100}% \n")
 
+        # Performance Metrics
+        recall_macro = recall_score(all_labels, all_preds, average='macro')
+        print(f"Recall_Macro : {recall_macro * 100}%")
+
+        precision_macro = precision_score(all_labels, all_preds, average='macro')
+        print(f"Precision_Macro : {precision_macro * 100}%")
+
+        f1_macro = f1_score(all_labels, all_preds, average='macro')
+        print(f"F1_Macro : {f1_macro * 100}% \n")
+
+        recall_micro = recall_score(all_labels, all_preds, average='micro')
+        print(f"Recall_Micro : {recall_micro * 100}%")
+
+        precision_micro = precision_score(all_labels, all_preds, average='micro')
+        print(f"Precision_Micro : {precision_micro * 100}%")
+
+        f1_micro = f1_score(all_labels, all_preds, average='micro')
+        print(f"F1_Micro : {f1_micro * 100}% \n")
+
         # Save Model and Generate Confusion Matrix
         torch.save(model.state_dict(), savePath)
         confusion(all_labels, all_preds, modelInst)
@@ -181,7 +203,7 @@ def main():
         # Train & Test CNN Model
         trainCNN(dataLoader=train_dataloader, model=model, device=device,
                  savePath=os.path.join(dataset.getDataDirectory(), "bin", saveFile))
-        testCNN(dataLoader=train_dataloader, model=model, device=device,
+        testCNN(dataLoader=test_dataloader, model=model, device=device,
                 savePath=os.path.join(dataset.getDataDirectory(), "bin", saveFile))
 
     plt.show()
