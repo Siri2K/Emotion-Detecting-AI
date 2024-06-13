@@ -78,7 +78,9 @@ def trainCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVari
                     f" Loss: {loss.item()}, "
                     f" Accuracy: {accuracy}%"
                 )
-        if accuracy < prevAccuracy:
+        if accuracy == 100:
+            break
+        elif accuracy < prevAccuracy:
             break
         else:
             prevAccuracy = accuracy
@@ -110,43 +112,64 @@ def testCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVaria
         all_preds = []
 
         # Gather Evaluation Data
-        for images, labels in dataLoader:
+        maxAccuracy: bool = False
+        prevAccuracy = 0
+        accuracy: float = 0
+        for batch_idx, (images, labels) in enumerate(dataLoader):
             images = images.to(device)
             labels = torch.tensor([emotion_to_index[label] for label in labels]).to(device)
             outputs = model(images)
             _, predicted = torch.max(outputs.data, 1)
 
             # Evaluate Obtained Data
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
             all_labels.extend(labels.cpu().numpy())
             all_preds.extend(predicted.cpu().numpy())
 
-        # Test Accuracy
-        print(f"Test Accuracy : {(correct / total) * 100}% \n")
+            if batch_idx % 100 == 0:
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
+                accuracy = (correct / total) * 100
 
-        # Performance Metrics
-        recall_macro = recall_score(all_labels, all_preds, average='macro')
-        print(f"Recall_Macro : {recall_macro * 100}%")
+            # Break and Save Model
+            if accuracy == 100:
+                maxAccuracy = True
+                print(f"Test Accuracy : {accuracy}%")
+                torch.save(model.state_dict(), savePath)
+                displayPerformanceMetrics(all_labels, all_preds)
+                confusion(all_labels, all_preds, modelInst)
+                break
+            elif accuracy < prevAccuracy:
+                break
+            else:
+                prevAccuracy = accuracy
+                torch.save(model.state_dict(), savePath)
 
-        precision_macro = precision_score(all_labels, all_preds, average='macro')
-        print(f"Precision_Macro : {precision_macro * 100}%")
+        # Generate Confusion Matrix
+        if not maxAccuracy:
+            print(f"Test Accuracy : {accuracy}%")
+            displayPerformanceMetrics(all_labels, all_preds)
+            confusion(all_labels, all_preds, modelInst)
 
-        f1_macro = f1_score(all_labels, all_preds, average='macro')
-        print(f"F1_Macro : {f1_macro * 100}% \n")
 
-        recall_micro = recall_score(all_labels, all_preds, average='micro')
-        print(f"Recall_Micro : {recall_micro * 100}%")
+def displayPerformanceMetrics(actual, predicted):
+    # Performance Metrics
+    recall_macro = recall_score(actual, predicted, average='macro')
+    print(f"Recall_Macro : {recall_macro * 100}%")
 
-        precision_micro = precision_score(all_labels, all_preds, average='micro')
-        print(f"Precision_Micro : {precision_micro * 100}%")
+    precision_macro = precision_score(actual, predicted, average='macro')
+    print(f"Precision_Macro : {precision_macro * 100}%")
 
-        f1_micro = f1_score(all_labels, all_preds, average='micro')
-        print(f"F1_Micro : {f1_micro * 100}% \n")
+    f1_macro = f1_score(actual, predicted, average='macro')
+    print(f"F1_Macro : {f1_macro * 100}%")
 
-        # Save Model and Generate Confusion Matrix
-        torch.save(model.state_dict(), savePath)
-        confusion(all_labels, all_preds, modelInst)
+    recall_micro = recall_score(actual, predicted, average='micro')
+    print(f"Recall_Micro : {recall_micro * 100}%")
+
+    precision_micro = precision_score(actual, predicted, average='micro')
+    print(f"Precision_Micro : {precision_micro * 100}%")
+
+    f1_micro = f1_score(actual, predicted, average='micro')
+    print(f"F1_Micro : {f1_micro * 100}% \n\n")
 
 
 def confusion(actual, predicted, modelName: str):
