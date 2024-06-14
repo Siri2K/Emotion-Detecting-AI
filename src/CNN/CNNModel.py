@@ -3,6 +3,8 @@ import torch.nn as nn
 
 class CNNModel(nn.Module):
     def __init__(self):
+        """Used for reference
+        https://pyimagesearch.com/2021/07/19/pytorch-training-your-first-convolutional-neural-network-cnn/"""
         super(CNNModel, self).__init__()
 
         # Define the layers of the CNN

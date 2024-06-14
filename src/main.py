@@ -16,7 +16,6 @@ from src.CNN.CNNVariant2 import CNNVariant2
 
 from sklearn.metrics import recall_score, precision_score, f1_score
 
-
 def trainCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVariant2], device: torch.device,
              savePath: str):
     # Determine Model To Train
@@ -33,9 +32,12 @@ def trainCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVari
     model = model.to(device=device)  # Configure GPU and Train Mode
 
     # Load Saved Model if exists
+    best_accuracy = 0
     if os.path.exists(savePath):
         print(f"Using Saved {modelInst}")
+        checkpoint = torch.load(savePath)
         model.load_state_dict(torch.load(savePath))
+        best_accuracy = checkpoint.get('accuracy', 0)
     else:
         print(f"Creating New {modelInst}")
 
@@ -47,7 +49,7 @@ def trainCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVari
     emotion_to_index = {'Angry': 0, 'Happy': 1, 'Focused': 2, 'Neutral': 3}
 
     # Setup Labels
-    prevAccuracy = 0
+    prevAccuracy = best_accuracy
     accuracy: float = 0
     for epoch in range(numEpoch):
         model.train()
@@ -78,12 +80,14 @@ def trainCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVari
                     f" Loss: {loss.item()}, "
                     f" Accuracy: {accuracy}%"
                 )
-        if accuracy == 100:
-            break
-        elif accuracy < prevAccuracy:
-            break
-        else:
+
+        # Save Model if Accuracy Improves
+        if accuracy > prevAccuracy:
             prevAccuracy = accuracy
+            torch.save({
+                'model_state_dict': model.state_dict(),
+                'accuracy': accuracy
+            }, savePath)
 
 
 def testCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVariant2], device: torch.device,
@@ -101,6 +105,16 @@ def testCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVaria
     emotion_to_index = {'Angry': 0, 'Happy': 1, 'Focused': 2, 'Neutral': 3}
     model = model.to(device=device).eval()  # Configure GPU and Train Mode
 
+    # with the help of Chatgpt
+    #Load the model state and accuracy if exists
+    if os.path.exists(savePath):
+        checkpoint = torch.load(savePath)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        saved_accuracy = checkpoint['accuracy']
+        print(f"Loaded saved model with accuracy: {saved_accuracy}%")
+    else:
+        print("No saved model found. Please train the model first.")
+
     # Evaluate Dataset
     with torch.no_grad():
         # Setup Prediction Count
@@ -115,7 +129,7 @@ def testCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVaria
         maxAccuracy: bool = False
         prevAccuracy = 0
         accuracy: float = 0
-        for batch_idx, (images, labels) in enumerate(dataLoader):
+        for images, labels in dataLoader:
             images = images.to(device)
             labels = torch.tensor([emotion_to_index[label] for label in labels]).to(device)
             outputs = model(images)
@@ -125,10 +139,10 @@ def testCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVaria
             all_labels.extend(labels.cpu().numpy())
             all_preds.extend(predicted.cpu().numpy())
 
-            if batch_idx % 100 == 0:
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
-                accuracy = (correct / total) * 100
+            # Calculate Accuracy
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+            accuracy = (correct / total) * 100
 
             # Break and Save Model
             if accuracy == 100:
