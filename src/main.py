@@ -37,7 +37,7 @@ def trainCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVari
         print(f"Using Saved {modelInst}")
         checkpoint = torch.load(savePath)
         model.load_state_dict(torch.load(savePath))
-        best_accuracy = checkpoint.get('accuracy', 0)
+        best_accuracy = checkpoint.get('accuracy',0)
     else:
         print(f"Creating New {modelInst}")
 
@@ -80,14 +80,15 @@ def trainCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVari
                     f" Loss: {loss.item()}, "
                     f" Accuracy: {accuracy}%"
                 )
+        testCNN(dataLoader=dataLoader, model=model, device=device, savePath=savePath)
 
-        # Save Model if Accuracy Improves
+        """Save Model if Accuracy Improves
         if accuracy > prevAccuracy:
             prevAccuracy = accuracy
             torch.save({
                 'model_state_dict': model.state_dict(),
                 'accuracy': accuracy
-            }, savePath)
+            }, savePath)"""
 
 
 def testCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVariant2], device: torch.device,
@@ -107,13 +108,13 @@ def testCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVaria
 
     # with the help of Chatgpt
     #Load the model state and accuracy if exists
-    if os.path.exists(savePath):
+    """if os.path.exists(savePath):
         checkpoint = torch.load(savePath)
         model.load_state_dict(checkpoint['model_state_dict'])
         saved_accuracy = checkpoint['accuracy']
         print(f"Loaded saved model with accuracy: {saved_accuracy}%")
     else:
-        print("No saved model found. Please train the model first.")
+        print("No saved model found. Please train the model first.")"""
 
     # Evaluate Dataset
     with torch.no_grad():
@@ -144,25 +145,14 @@ def testCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVaria
             correct += (predicted == labels).sum().item()
             accuracy = (correct / total) * 100
 
-            # Break and Save Model
-            if accuracy == 100:
-                maxAccuracy = True
-                print(f"Test Accuracy : {accuracy}%")
-                torch.save(model.state_dict(), savePath)
-                displayPerformanceMetrics(all_labels, all_preds)
-                confusion(all_labels, all_preds, modelInst)
-                break
-            elif accuracy < prevAccuracy:
-                break
-            else:
-                prevAccuracy = accuracy
-                torch.save(model.state_dict(), savePath)
-
-        # Generate Confusion Matrix
-        if not maxAccuracy:
+        if accuracy == 100 or accuracy > prevAccuracy:
             print(f"Test Accuracy : {accuracy}%")
-            displayPerformanceMetrics(all_labels, all_preds)
-            confusion(all_labels, all_preds, modelInst)
+            torch.save({
+                'model_state_dict': model.state_dict(),
+                'accuracy': accuracy
+            }, savePath)
+        displayPerformanceMetrics(all_labels, all_preds)
+        confusion(all_labels, all_preds, modelInst)
 
 
 def displayPerformanceMetrics(actual, predicted):
@@ -227,7 +217,8 @@ def main():
     saveFile: str = ''
 
     # Train All Models
-    models = [CNNModel(), CNNVariant1(), CNNVariant2()]
+    models = [CNNModel()]
+    #models = [CNNModel(), CNNVariant1(), CNNVariant2()]
 
     for model in models:
         if isinstance(model, CNNModel):
@@ -240,8 +231,8 @@ def main():
         # Train & Test CNN Model
         trainCNN(dataLoader=train_dataloader, model=model, device=device,
                  savePath=os.path.join(dataset.getDataDirectory(), "bin", saveFile))
-        testCNN(dataLoader=test_dataloader, model=model, device=device,
-                savePath=os.path.join(dataset.getDataDirectory(), "bin", saveFile))
+        #testCNN(dataLoader=test_dataloader, model=model, device=device,
+         #       savePath=os.path.join(dataset.getDataDirectory(), "bin", saveFile))
 
     plt.show()
 
