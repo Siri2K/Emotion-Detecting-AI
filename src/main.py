@@ -25,21 +25,15 @@ def trainCNN(dataLoader: List[DataLoader], model: Union[CNNModel, CNNVariant1, C
     savedData = torch.load(savePath) if os.path.exists(savePath) else None
     if isinstance(model, CNNModel):
         modelInst: str = "Model"
-        if os.path.exists(savePath):
-            model.load_state_dict(savedData['model_state'])
     elif isinstance(model, CNNVariant1):
-        modelInst: str = "Model"
-        if os.path.exists(savePath):
-            model.load_state_dict(savedData['model_state'])
+        modelInst: str = "Variant1"
     elif isinstance(model, CNNVariant2):
-        modelInst: str = "Model"
-        if os.path.exists(savePath):
-            model.load_state_dict(savedData['model_state'])
-
-    numEpoch = 10
+        modelInst: str = "Variant2"
 
 
     # Setup Loss Factor and Optimiser
+    numberOfFails = 0
+    numEpoch = 15
     model = model.to(device=device)  # Configure GPU and Train Mode
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
@@ -52,6 +46,7 @@ def trainCNN(dataLoader: List[DataLoader], model: Union[CNNModel, CNNVariant1, C
     emotion_to_index = {'Angry': 0, 'Happy': 1, 'Focused': 2, 'Neutral': 3}
 
     # Setup Labels
+    print(modelInst)
     for epoch in range(numEpoch):
         model.train()
         for batch_idx, (images, labels) in enumerate(dataLoader[0]):
@@ -83,8 +78,12 @@ def trainCNN(dataLoader: List[DataLoader], model: Union[CNNModel, CNNVariant1, C
                 )
 
         # Update Accuracy
-        if accuracy == 100 or accuracy < prevAccuracy:
+        if accuracy == 100:
             break
+        elif accuracy < prevAccuracy and numberOfFails > 2:
+            break
+        elif accuracy < prevAccuracy:
+            numberOfFails += 1
         else:
             prevAccuracy = accuracy
 
@@ -104,19 +103,13 @@ def testCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVaria
     savedData = torch.load(savePath) if os.path.exists(savePath) else None
     if isinstance(model, CNNModel):
         if os.path.exists(savePath):
-            model = CNNModel()
-            model.load_state_dict(savedData['model_state'])
-            print(f"Current Test Accuracy : {savedData['accuracy']}")
+            print(f"Current Test Accuracy : {savedData['accuracy']:.4f}")
     elif isinstance(model, CNNVariant1):
         if os.path.exists(savePath):
-            model = CNNModel()
-            model.load_state_dict(savedData['model_state'])
-            print(f"Current Test Accuracy : {savedData['accuracy']}")
+            print(f"Current Test Accuracy : {savedData['accuracy']:.4f}")
     elif isinstance(model, CNNVariant2):
         if os.path.exists(savePath):
-            model = CNNModel()
-            model.load_state_dict(savedData['model_state'])
-            print(f"Current Test Accuracy : {savedData['accuracy']}")
+            print(f"Current Test Accuracy : {savedData['accuracy']:.4f}")
 
     model = model.to(device=device).eval()
 
