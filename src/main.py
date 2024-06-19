@@ -8,8 +8,9 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from sklearn import metrics
+import torchvision.transforms.functional as TF
 
-from data import EmotionImages, DataLoader
+from data import EmotionImages, DataLoader, Image, ImageDataset
 from src.CNN.CNNModel import CNNModel
 from src.CNN.CNNVariant1 import CNNVariant1
 from src.CNN.CNNVariant2 import CNNVariant2
@@ -17,9 +18,27 @@ from src.CNN.CNNVariant2 import CNNVariant2
 from sklearn.metrics import recall_score, precision_score, f1_score
 
 
+# select a random image
+def random_image(data_loader: DataLoader):
+    # Select a random batch from the DataLoader
+    dataset : ImageDataset = data_loader.dataset
+    images, labels = next(iter(data_loader))
+
+    # Select a random image from the batch
+    imageSize = len(images)
+    idx = np.random.randint(0, len(images))  # Get a random index
+    img = images[idx]  # Select the image
+
+    # Convert tensor to PIL Image for displaying if needed
+    img = TF.to_pil_image(img)
+
+    # Display the image
+    plt.imshow(img, cmap='gray')
+    plt.axis('off')  # Turn off axis numbers and ticks
+
+
 def trainCNN(dataLoader: List[DataLoader], model: Union[CNNModel, CNNVariant1, CNNVariant2], device: torch.device,
              savePath: str):
-
     # Determine Model to Train
     modelInst: str = ""
     savedData = torch.load(savePath) if os.path.exists(savePath) else None
@@ -29,7 +48,6 @@ def trainCNN(dataLoader: List[DataLoader], model: Union[CNNModel, CNNVariant1, C
         modelInst: str = "Variant1"
     elif isinstance(model, CNNVariant2):
         modelInst: str = "Variant2"
-
 
     # Setup Loss Factor and Optimiser
     numberOfFails = 0
@@ -87,7 +105,8 @@ def trainCNN(dataLoader: List[DataLoader], model: Union[CNNModel, CNNVariant1, C
         else:
             prevAccuracy = accuracy
 
-        all_labels, all_preds = testCNN(dataLoader=dataLoader[1], model=model, device=device, savePath=savePath)
+        # Test Model for validation [2]
+        all_labels, all_preds = testCNN(dataLoader=dataLoader[2], model=model, device=device, savePath=savePath)
 
     # Kill Code
     displayPerformanceMetrics(all_labels, all_preds)
@@ -225,9 +244,11 @@ def main():
             saveFile: str = "variant2.pth"
 
         # Train & Test CNN Model
-        trainCNN(dataLoader=[train_dataloader, test_dataloader, validation_dataloader], model=model, device=device,
-                 savePath=os.path.join(dataset.getDataDirectory(), "bin", saveFile))
+        #trainCNN(dataLoader=[train_dataloader, test_dataloader, validation_dataloader], model=model, device=device,
+               #  savePath=os.path.join(dataset.getDataDirectory(), "bin", saveFile))
 
+        random_image(test_dataloader)
+    # Display Dataset
     plt.show()
 
 

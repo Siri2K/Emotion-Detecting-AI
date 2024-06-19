@@ -359,4 +359,6 @@ class ImageDataset(Dataset):
         label = self.data[idx]['label']
         return image, label
 
+    def _getSize_(self):
+        return self.__len__()
 
