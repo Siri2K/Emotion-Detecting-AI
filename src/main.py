@@ -1,42 +1,55 @@
 import os
 import sys
-from typing import Union, List
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from sklearn import metrics
 import torchvision.transforms.functional as TF
 
-from data import EmotionImages, DataLoader, Image, ImageDataset
+from typing import Union, List
+from sklearn import metrics
+from data import EmotionImages, DataLoader, Image, ImageDataset, ToTensor
 from src.CNN.CNNModel import CNNModel
 from src.CNN.CNNVariant1 import CNNVariant1
 from src.CNN.CNNVariant2 import CNNVariant2
-
 from sklearn.metrics import recall_score, precision_score, f1_score
 
 
 # select a random image
-def random_image(data_loader: DataLoader):
-    # Select a random batch from the DataLoader
-    dataset : ImageDataset = data_loader.dataset
-    images, labels = next(iter(data_loader))
+#help of chatgpt and lab6
+def random_image(data_loader: DataLoader, models: List[Union[CNNModel, CNNVariant1, CNNVariant2]]):
+    # Select a random image from the dataset
+    dataset: ImageDataset = data_loader.dataset
+    emotionLabels = dataset.getAllLabels()
 
-    # Select a random image from the batch
-    imageSize = len(images)
-    idx = np.random.randint(0, len(images))  # Get a random index
-    img = images[idx]  # Select the image
+    for model in models:
+        idx = np.random.randint(0, dataset.getDataSize())  # Get a random index
+        img, label = dataset.getData(idx)  # Select the image
 
-    # Convert tensor to PIL Image for displaying if needed
-    img = TF.to_pil_image(img)
+        # Convert tensor to PIL Image for displaying
+        img_pil = TF.to_pil_image(img)
 
-    # Display the image
-    plt.imshow(img, cmap='gray')
-    plt.axis('off')  # Turn off axis numbers and ticks
+        # Convert back to tensor and normalize/prepare for model
+        img_tensor = ToTensor()(img_pil)
+
+        # Add batch dimension (model expects batch, not single image)
+        img_tensor = img_tensor.unsqueeze(0)
+
+        # Predict with model
+        outputs = model(img_tensor)
+        _, predicted = torch.max(outputs.data, 1)
+
+        # Display the image
+        plt.figure()
+        plt.title(f" Actual: {label} |" +
+                  f" Predicted: {emotionLabels[predicted.item()]}")
+        plt.imshow(img_pil, cmap='gray')  # Displaying the PIL image
+        plt.axis('off')  # Turn off axis numbers and ticks
 
 
+# Train CNN Model
 def trainCNN(dataLoader: List[DataLoader], model: Union[CNNModel, CNNVariant1, CNNVariant2], device: torch.device,
              savePath: str):
     # Determine Model to Train
@@ -197,7 +210,7 @@ def confusion(actual, predicted, modelName: str):
     # w3 school  https://www.w3schools.com/python/python_ml_confusion_matrix.asp
 
     :param modelName:
-    :param actual:
+    :param actual:models
     :param predicted:
     :return:
     """
@@ -218,14 +231,27 @@ def main():
     dataset.setup()
 
     # Choose to Either Clean or Visualize Dataset
+    models = []
     if len(sys.argv) > 1:
         if sys.argv[1] == "--display":
             dataset.plotVisuals()
             return
+        elif sys.argv[1] == "--variant1":
+            models.append(CNNVariant1())
+        elif sys.argv[1] == "--variant2":
+            models.append(CNNVariant2())
+        elif sys.argv[1] == "--trainAll":
+            models.append(CNNModel())
+            models.append(CNNVariant1())
+            models.append(CNNVariant2())
+        elif sys.argv[1] == "--none":
+            pass
         else:
             print("Invalid Command")
             print("Please Enter : python main.py or python main.py --display")
             return
+    else:
+        models.append(CNNModel())
 
     # Gather Inputs
     train_dataloader, test_dataloader, validation_dataloader = dataset.getDataLoaders()
@@ -233,8 +259,6 @@ def main():
     saveFile: str = ''
 
     # Train All Models
-    models = [CNNModel(), CNNVariant1(), CNNVariant2()]
-
     for model in models:
         if isinstance(model, CNNModel):
             saveFile: str = "model.pth"
@@ -244,10 +268,14 @@ def main():
             saveFile: str = "variant2.pth"
 
         # Train & Test CNN Model
-        #trainCNN(dataLoader=[train_dataloader, test_dataloader, validation_dataloader], model=model, device=device,
-               #  savePath=os.path.join(dataset.getDataDirectory(), "bin", saveFile))
+        trainCNN(dataLoader=[train_dataloader, test_dataloader, validation_dataloader], model=model, device=device,
+                 savePath=os.path.join(dataset.getDataDirectory(), "bin", saveFile))
 
-        random_image(test_dataloader)
+    if len(models) > 0:
+        random_image(test_dataloader, models)
+    else:
+        random_image(test_dataloader, [CNNModel()])
+
     # Display Dataset
     plt.show()
 
