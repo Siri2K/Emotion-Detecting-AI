@@ -359,4 +359,13 @@ class ImageDataset(Dataset):
         label = self.data[idx]['label']
         return image, label
 
+    def getDataSize(self):
+        return self.__len__()
+
+    def getData(self,idx):
+        image, label = self.__getitem__(idx)
+        return image, label
+
+    def getAllLabels(self) -> List[str]:
+        return list(set([data['label'] for data in self.data]))
 
