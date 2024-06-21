@@ -8,6 +8,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms.functional as TF
 
+
 from typing import Union, List
 from sklearn import metrics
 from data import EmotionImages, DataLoader, Image, ImageDataset, ToTensor
@@ -15,10 +16,92 @@ from src.CNN.CNNModel import CNNModel
 from src.CNN.CNNVariant1 import CNNVariant1
 from src.CNN.CNNVariant2 import CNNVariant2
 from sklearn.metrics import recall_score, precision_score, f1_score
+from sklearn.model_selection import KFold
+
+
+#kfold cross validation for CNN model 10 fold cross validation
+def kfold_cross_validation(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVariant2], device: torch.device,
+                            savePath: str):
+    # Determine Model to Train
+    modelInst: str = ""
+    savedData = torch.load(savePath) if os.path.exists(savePath) else None
+    if isinstance(model, CNNModel):
+        modelInst: str = "Model"
+    elif isinstance(model, CNNVariant1):
+        modelInst: str = "Variant1"
+    elif isinstance(model, CNNVariant2):
+        modelInst: str = "Variant2"
+
+    # Setup K fold cross validation
+    k_folds = 5
+    kfold = KFold(n_splits=k_folds, shuffle=True)
+
+    # Define the model architecture
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = CNNVariant2().to(device)
+
+    # Criterion and Optimizer
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+    # Start the k-fold cross-validation
+    for fold, (train_ids, test_ids) in enumerate(kfold.split(dataLoader.dataset)):
+        # Sample elements randomly from a given list of ids, no replacement
+        train_subsampler = torch.utils.data.SubsetRandomSampler(train_ids)
+        test_subsampler = torch.utils.data.SubsetRandomSampler(test_ids)
+
+        # Define data loaders for training and testing data in this fold
+        trainloader = DataLoader(dataLoader.dataset, batch_size=10, sampler=train_subsampler)
+        testloader = DataLoader(dataLoader.dataset, batch_size=10, sampler=test_subsampler)
+
+        # Init the neural network
+        model.apply(reset_weights)  # Function to reset weights if needed
+
+        # Run the training loop for defined number of epochs
+        for epoch in range(0, 10):
+            # Train the model
+            model.train()
+            for i, data in enumerate(trainloader):
+                inputs, targets = data
+                inputs = inputs.to(device)
+                targets = targets.to(device)
+
+                # Zero the gradients
+                optimizer.zero_grad()
+
+                # Perform forward pass
+                outputs = model(inputs)
+
+                # Compute loss
+                loss = criterion(outputs, targets)
+
+                # Perform backward pass
+                loss.backward()
+
+                # Perform optimization
+                optimizer.step()
+
+            # Evaluation for this fold
+            model.eval()
+            total = 0
+            correct = 0
+            with torch.no_grad():
+                for i, (inputs, targets) in enumerate(testloader):
+                    inputs, targets = inputs.to(device), targets.to(device)
+                    outputs = model(inputs)
+                    _, predicted = torch.max(outputs.data, 1)
+                    total += targets.size(0)
+                    correct += (predicted == targets).sum().item()
+
+            print(f'Fold {fold}, Epoch {epoch}, Accuracy: {100.0 * correct / total}%')
+
+def reset_weights(m):
+    if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
+        m.reset_parameters()
 
 
 # select a random image
-#help of chatgpt and lab6
+#help of chatgpt and lab 6
 def random_image(data_loader: DataLoader, models: List[Union[CNNModel, CNNVariant1, CNNVariant2]]):
     # Select a random image from the dataset
     dataset: ImageDataset = data_loader.dataset
@@ -257,6 +340,9 @@ def main():
     train_dataloader, test_dataloader, validation_dataloader = dataset.getDataLoaders()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     saveFile: str = ''
+
+    kfold_cross_validation(dataLoader=train_dataloader, model=CNNVariant2(), device=device,
+                           savePath=os.path.join(dataset.getDataDirectory(), "bin", "variant2.pth"))
 
     # Train All Models
     for model in models:
