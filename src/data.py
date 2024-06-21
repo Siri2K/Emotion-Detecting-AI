@@ -48,7 +48,9 @@ class EmotionImages:
     # Constructor
     def __init__(self):
         self.__dataDirectory: str = ''
-        self.__imageDataSet: Dict[str, List[Image.Image]] = {}
+        self.__emotionImageDataSet: Dict[str, List[Image.Image]] = {}
+        self.__ageImageDataSet: Dict[str, List[Image.Image]] = {}
+        self.__genderImageDataSet: Dict[str, List[Image.Image]] = {}
         self.__imageSplitDataSet: Dict[str, Dict[str, List[Image.Image]]] = {}
         self.__fileDataSet: Dict[str, List[str]] = {}
 
@@ -61,13 +63,13 @@ class EmotionImages:
         self.__dataDirectory = dataDirectory
 
     def setEmotionImageDataset(self, dataset: Dict[str, List[Image.Image]]):
-        self.__imageDataSet = dataset
+        self.__emotionImageDataSet = dataset
 
     def setAgeImageDataset(self, dataset: Dict[str, List[Image.Image]]):
-        self.__imageDataSet = dataset
+        self.__ageImageDataSet = dataset
 
     def setGenderImageDataset(self, dataset: Dict[str, List[Image.Image]]):
-        self.__imageDataSet = dataset
+        self.__genderImageDataSet = dataset
 
     def setImageSplitDataset(self, dataset: Dict[str, Dict[str, List[Image.Image]]]):
         self.__imageSplitDataSet = dataset
@@ -79,13 +81,13 @@ class EmotionImages:
         return self.__dataDirectory
 
     def getEmotionImageDataset(self) -> Dict[str, List[Image.Image]]:
-        return self.__imageDataSet.copy()
+        return self.__emotionImageDataSet.copy()
 
     def getGenderImageDataset(self) -> Dict[str, List[Image.Image]]:
-        return self.__imageDataSet.copy()
+        return self.__genderImageDataSet.copy()
 
     def getAgeImageDataset(self) -> Dict[str, List[Image.Image]]:
-        return self.__imageDataSet.copy()
+        return self.__ageImageDataSet.copy()
 
     def getImageSplitDataset(self) -> Dict[str, Dict[str, List[Image.Image]]]:
         return self.__imageSplitDataSet.copy()
