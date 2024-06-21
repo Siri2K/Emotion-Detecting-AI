@@ -26,8 +26,8 @@ def cleanImage(path) -> Image:
 
     image = Image.open(path)  # Open Image File
     if image.size != (336, 336) or image.mode != 'L':
-        image.convert('L').resize((336, 336), Image.LANCZOS)
-        image.save(path)
+        image = image.convert('L').resize((336, 336), Image.LANCZOS)
+        image.save(path,optimize=True, quality=95)
     return image
 
 
