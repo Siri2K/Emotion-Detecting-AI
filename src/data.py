@@ -26,8 +26,8 @@ def cleanImage(path) -> Image:
 
     image = Image.open(path)  # Open Image File
     if image.size != (336, 336) or image.mode != 'L':
-        image.convert('L').resize((336, 336), Image.LANCZOS)
-        image.save(path)
+        image = image.convert('L').resize((336, 336), Image.LANCZOS)
+        image.save(path, optimize=True, quality=95)
     return image
 
 
@@ -48,7 +48,9 @@ class EmotionImages:
     # Constructor
     def __init__(self):
         self.__dataDirectory: str = ''
-        self.__imageDataSet: Dict[str, List[Image.Image]] = {}
+        self.__emotionImageDataSet: Dict[str, List[Image.Image]] = {}
+        self.__ageImageDataSet: Dict[str, List[Image.Image]] = {}
+        self.__genderImageDataSet: Dict[str, List[Image.Image]] = {}
         self.__imageSplitDataSet: Dict[str, Dict[str, List[Image.Image]]] = {}
         self.__fileDataSet: Dict[str, List[str]] = {}
 
@@ -60,8 +62,14 @@ class EmotionImages:
     def setDataDirectory(self, dataDirectory: str):
         self.__dataDirectory = dataDirectory
 
-    def setImageDataset(self, dataset: Dict[str, List[Image.Image]]):
-        self.__imageDataSet = dataset
+    def setEmotionImageDataset(self, dataset: Dict[str, List[Image.Image]]):
+        self.__emotionImageDataSet = dataset
+
+    def setAgeImageDataset(self, dataset: Dict[str, List[Image.Image]]):
+        self.__ageImageDataSet = dataset
+
+    def setGenderImageDataset(self, dataset: Dict[str, List[Image.Image]]):
+        self.__genderImageDataSet = dataset
 
     def setImageSplitDataset(self, dataset: Dict[str, Dict[str, List[Image.Image]]]):
         self.__imageSplitDataSet = dataset
@@ -72,8 +80,14 @@ class EmotionImages:
     def getDataDirectory(self) -> str:
         return self.__dataDirectory
 
-    def getImageDataset(self) -> Dict[str, List[Image.Image]]:
-        return self.__imageDataSet.copy()
+    def getEmotionImageDataset(self) -> Dict[str, List[Image.Image]]:
+        return self.__emotionImageDataSet.copy()
+
+    def getGenderImageDataset(self) -> Dict[str, List[Image.Image]]:
+        return self.__genderImageDataSet.copy()
+
+    def getAgeImageDataset(self) -> Dict[str, List[Image.Image]]:
+        return self.__ageImageDataSet.copy()
 
     def getImageSplitDataset(self) -> Dict[str, Dict[str, List[Image.Image]]]:
         return self.__imageSplitDataSet.copy()
@@ -114,39 +128,112 @@ class EmotionImages:
         """
 
         # Initialize Data
-        imageDataDict: Dict[str, List[Image.Image]] = {}
+        emotionImageDataDict: Dict[str, List[Image.Image]] = {}
         fileDataDict: Dict[str, List[str]] = {}
-        imageDataSet: List[Image.Image] = []
+        emotionImageDataSet: List[Image.Image] = []
         fileDataSet: List[str] = []
+
+        # Setup for Age and Gender Datasets
+        femaleDataset: List[Image.Image] = []
+        maleDataset: List[Image.Image] = []
+        youngDataset: List[Image.Image] = []
+        middleDataset: List[Image.Image] = []
+        seniorDataset: List[Image.Image] = []
+
+        genderImageDataDict: Dict[str, List[Image.Image]] = {
+            'Male': [],
+            'Female': []
+        }
+        ageImageDataDict: Dict[str, List[Image.Image]] = {
+            'Young': [],
+            'Middle': [],
+            'Senior': []
+        }
 
         # Gather Images and File List
         for root, directory, files in os.walk(os.path.join(self.getDataDirectory(), "resources")):
+            pathOptions: List[str] = []
             for file in files:
                 # Gather Files & Images
                 if file.endswith(".jpg") or file.endswith(".png"):
                     path: str = os.path.join(root, file)
+
+                    # Setup File
                     fileDataSet.append(path)
-                    imageDataSet.append(cleanImage(path))
+
+                    # Setup Emotion Datasets
+                    image: Image = cleanImage(path)
+                    emotionImageDataSet.append(image)
+
+                    # Split File and determine where to place Gender and Age
+                    pathOptions = file.split("_")
+                    pathOptions[-1] = pathOptions[-1].split(".")[0]
+                    pathOptions[-1] = ''.join([i for i in pathOptions[-1] if not i.isdigit()])
+
+                    # Setup key-val to age and gender datasets
+                    if pathOptions[-2] == "Male":
+                        maleDataset.append(image)
+                    else:
+                        femaleDataset.append(image)
+
+                    if pathOptions[-1] == "Young":
+                        youngDataset.append(image)
+                    elif pathOptions[-1] == "Middle":
+                        middleDataset.append(image)
+                    else:
+                        seniorDataset.append(image)
 
             # Store Them
-            if len(fileDataSet) > 0 and len(imageDataSet) > 0:
+            if len(fileDataSet) > 0 and len(emotionImageDataSet) > 0:
                 folder = root.split("\\")[-1] if platform.system() == "Windows" else root.split("/")[-1]
                 fileDataDict[folder] = fileDataSet.copy()
-                imageDataDict[folder] = imageDataSet.copy()
+                emotionImageDataDict[folder] = emotionImageDataSet.copy()
 
                 # Clear Data
                 fileDataSet.clear()
-                imageDataSet.clear()
+                emotionImageDataSet.clear()
+
+            # Setup Gender
+            if len(maleDataset) > 0:
+                genderImageDataDict['Male'].extend(maleDataset)
+                maleDataset.clear()
+
+            if len(femaleDataset) > 0:
+                genderImageDataDict['Female'].extend(femaleDataset)
+                femaleDataset.clear()
+
+            if len(youngDataset) > 0:
+                ageImageDataDict['Young'].extend(youngDataset)
+                youngDataset.clear()
+
+            if len(middleDataset) > 0:
+                ageImageDataDict['Middle'].extend(middleDataset)
+                middleDataset.clear()
+
+            if len(seniorDataset) > 0:
+                ageImageDataDict['Senior'].extend(seniorDataset)
+                seniorDataset.clear()
 
         # Setup Data
         self.setFileDataset(fileDataDict.copy())
-        self.setImageDataset(imageDataDict.copy())
+        self.setEmotionImageDataset(emotionImageDataDict.copy())
+        self.setGenderImageDataset(genderImageDataDict.copy())
+        self.setAgeImageDataset(ageImageDataDict.copy())
 
         # Delete Ununsed
-        del imageDataDict
+        del emotionImageDataDict
         del fileDataDict
-        del imageDataSet
+        del emotionImageDataSet
         del fileDataSet
+
+        del femaleDataset
+        del maleDataset
+        del youngDataset
+        del middleDataset
+        del seniorDataset
+
+        del genderImageDataDict
+        del ageImageDataDict
 
     def splitData(self):
         """
@@ -157,7 +244,7 @@ class EmotionImages:
         """
 
         # Initialize
-        data = self.getImageDataset()
+        data = self.getEmotionImageDataset()
         splitData: dict = {
             'train': {
                 'Angry': [],
@@ -214,7 +301,7 @@ class EmotionImages:
 
     def gatherSampleImagesIndexes(self) -> List[list]:
         # Initialize
-        images: dict = self.getImageDataset()
+        images: dict = self.getEmotionImageDataset()
         keys: list = list(images.keys())
         sampleImages: List[list] = []
 
@@ -232,7 +319,7 @@ class EmotionImages:
     def plotSampleImageGrid(self):
         # Gather Inputs
         indexList: List = self.gatherSampleImagesIndexes()
-        images: dict = self.getImageDataset()
+        images: dict = self.getEmotionImageDataset()
 
         # Initialize Grid
         nRows: int = 3
@@ -258,7 +345,7 @@ class EmotionImages:
         """
 
         # Initialize Variables
-        images = self.getImageDataset()
+        images = self.getEmotionImageDataset()
 
         # Setup X-Y
         X: list = list(images.keys())
@@ -281,7 +368,7 @@ class EmotionImages:
     def plotPixelIntensityDistributionClassForSample(self):
         # Gather Inputs
         indexList: List = self.gatherSampleImagesIndexes()
-        imageDict: dict = self.getImageDataset()
+        imageDict: dict = self.getEmotionImageDataset()
         imageList: List = []
 
         # Gather Pixel Distribution
@@ -312,7 +399,7 @@ class EmotionImages:
         """
 
         # Initialize Data
-        imageDict: dict = self.getImageDataset()
+        imageDict: dict = self.getEmotionImageDataset()
 
         # Gather Pixel Distribution
         for key, images in imageDict.items():
@@ -362,10 +449,9 @@ class ImageDataset(Dataset):
     def getDataSize(self):
         return self.__len__()
 
-    def getData(self,idx):
+    def getData(self, idx):
         image, label = self.__getitem__(idx)
         return image, label
 
     def getAllLabels(self) -> List[str]:
         return list(set([data['label'] for data in self.data]))
-
