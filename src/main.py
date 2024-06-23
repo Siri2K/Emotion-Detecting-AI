@@ -5,13 +5,18 @@ from train import CNNModel, CNNVariant1, CNNVariant2
 from train import plt
 from train import torch
 from train import trainCNN, trainCNNWithKFold, random_image
-from data import EmotionImages
+from emotionData import EmotionImages, getDataLoaders
+from genderData import GenderImages
 
 
 def main():
-    # Initialize DataSet
+    # Initialize DataSets
     dataset = EmotionImages()
+    genderDataset = GenderImages()
+
+    # Setup Databases
     dataset.setup()
+    genderDataset.setup()
 
     # Choose to Either Clean or Visualize Dataset
     models = []
@@ -37,7 +42,15 @@ def main():
         models.append(CNNVariant2())
 
     # Gather Inputs
-    train_dataloader, test_dataloader, validation_dataloader = dataset.getDataLoaders()
+    trainDataloader, tesDataloader, validationDataloader = (
+        getDataLoaders(dataset.getImageSplitDataset()))  # Emotion
+
+    maleTrainDataloader, maleTesDataloader, maleValidationDataloader = (
+        getDataLoaders(genderDataset.getMaleImageSplitDataset()))  # Male
+
+    femaleTrainDataloader, femaleTesDataloader, femaleValidationDataloader = getDataLoaders(
+        genderDataset.getFemaleImageSplitDataset())  # Female
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     saveFile: str = ''
 
@@ -50,14 +63,30 @@ def main():
         elif isinstance(model, CNNVariant2):
             saveFile: str = "variant2.pth"
 
+        # Training Datasets
+        """ 
+        trainCNN(dataLoader=[trainDataloader, tesDataloader, validationDataloader], model=model,
+              device=device, savePath=os.path.join(dataset.getDataDirectory(), "bin", saveFile))
+        """
+
+        trainCNN(dataLoader=[maleTrainDataloader, maleTesDataloader, maleValidationDataloader], model=model,
+                 device=device, savePath=os.path.join(genderDataset.getDataDirectory(), "bin", saveFile))
+
+        """
+        trainCNN(dataLoader=[femaleTrainDataloader, femaleTesDataloader, femaleValidationDataloader], model=model,
+              device=device, savePath=os.path.join(genderDataset.getDataDirectory(), "bin", saveFile))
+        """
+
         # Train & Test CNN Model with K-Fold
-        trainCNNWithKFold(dataLoader=[train_dataloader, test_dataloader, validation_dataloader], model=model,
-                          device=device,savePath=os.path.join(dataset.getDataDirectory(), "bin", saveFile))
+        """
+        trainCNNWithKFold(dataLoader=[trainDataloader, tesDataloader, validationDataloader], model=model,
+                          device=device, savePath=os.path.join(dataset.getDataDirectory(), "bin", saveFile))
+        """
 
     if len(models) > 0:
-        random_image(test_dataloader, models)
+        random_image(tesDataloader, models)
     else:
-        random_image(test_dataloader, [CNNVariant2()])
+        random_image(tesDataloader, [CNNVariant2()])
 
     # Display Dataset
     plt.show()

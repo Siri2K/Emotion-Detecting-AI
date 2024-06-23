@@ -44,32 +44,40 @@ def gatherRGBOfImages(images: List[Image.Image]) -> List[int]:
     return intensity
 
 
+def getDataLoaders(database:dict):
+    # Update Dataset
+    batchSize: int = 32
+
+    # Setup Dataset
+    train_dataset = ImageDataset(database['train'])
+    test_dataset = ImageDataset(database['test'])
+    validation_dataset = ImageDataset(database['validation'])
+
+    # Create DataLoaders
+    train_dataloader = DataLoader(train_dataset, batch_size=batchSize, shuffle=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=batchSize, shuffle=False)
+    validation_dataloader = DataLoader(validation_dataset, batch_size=batchSize, shuffle=False)
+
+    return train_dataloader, test_dataloader, validation_dataloader
+
+
 class EmotionImages:
     # Constructor
     def __init__(self):
         self.__dataDirectory: str = ''
-        self.__emotionImageDataSet: Dict[str, List[Image.Image]] = {}
-        self.__ageImageDataSet: Dict[str, List[Image.Image]] = {}
-        self.__genderImageDataSet: Dict[str, List[Image.Image]] = {}
+        self.__imageDataSet: Dict[str, List[Image.Image]] = {}
         self.__imageSplitDataSet: Dict[str, Dict[str, List[Image.Image]]] = {}
         self.__fileDataSet: Dict[str, List[str]] = {}
 
         # Initialize
         self.saveDataDirectory()
-        self.setup()
 
     # Set and Getter
     def setDataDirectory(self, dataDirectory: str):
         self.__dataDirectory = dataDirectory
 
-    def setEmotionImageDataset(self, dataset: Dict[str, List[Image.Image]]):
-        self.__emotionImageDataSet = dataset
-
-    def setAgeImageDataset(self, dataset: Dict[str, List[Image.Image]]):
-        self.__ageImageDataSet = dataset
-
-    def setGenderImageDataset(self, dataset: Dict[str, List[Image.Image]]):
-        self.__genderImageDataSet = dataset
+    def setImageDataset(self, dataset: Dict[str, List[Image.Image]]):
+        self.__imageDataSet = dataset
 
     def setImageSplitDataset(self, dataset: Dict[str, Dict[str, List[Image.Image]]]):
         self.__imageSplitDataSet = dataset
@@ -80,14 +88,8 @@ class EmotionImages:
     def getDataDirectory(self) -> str:
         return self.__dataDirectory
 
-    def getEmotionImageDataset(self) -> Dict[str, List[Image.Image]]:
-        return self.__emotionImageDataSet.copy()
-
-    def getGenderImageDataset(self) -> Dict[str, List[Image.Image]]:
-        return self.__genderImageDataSet.copy()
-
-    def getAgeImageDataset(self) -> Dict[str, List[Image.Image]]:
-        return self.__ageImageDataSet.copy()
+    def getImageDataset(self) -> Dict[str, List[Image.Image]]:
+        return self.__imageDataSet.copy()
 
     def getImageSplitDataset(self) -> Dict[str, Dict[str, List[Image.Image]]]:
         return self.__imageSplitDataSet.copy()
@@ -98,7 +100,7 @@ class EmotionImages:
     # Role
     def setup(self):
         self.setupFullData()
-        self.splitData()
+        self.splitData(self.getImageDataset())
 
     def saveDataDirectory(self):
         # Save Data Directory
@@ -128,31 +130,13 @@ class EmotionImages:
         """
 
         # Initialize Data
-        emotionImageDataDict: Dict[str, List[Image.Image]] = {}
+        imageDataDict: Dict[str, List[Image.Image]] = {}
         fileDataDict: Dict[str, List[str]] = {}
-        emotionImageDataSet: List[Image.Image] = []
+        imageDataSet: List[Image.Image] = []
         fileDataSet: List[str] = []
-
-        # Setup for Age and Gender Datasets
-        femaleDataset: List[Image.Image] = []
-        maleDataset: List[Image.Image] = []
-        youngDataset: List[Image.Image] = []
-        middleDataset: List[Image.Image] = []
-        seniorDataset: List[Image.Image] = []
-
-        genderImageDataDict: Dict[str, List[Image.Image]] = {
-            'Male': [],
-            'Female': []
-        }
-        ageImageDataDict: Dict[str, List[Image.Image]] = {
-            'Young': [],
-            'Middle': [],
-            'Senior': []
-        }
 
         # Gather Images and File List
         for root, directory, files in os.walk(os.path.join(self.getDataDirectory(), "resources")):
-            pathOptions: List[str] = []
             for file in files:
                 # Gather Files & Images
                 if file.endswith(".jpg") or file.endswith(".png"):
@@ -163,79 +147,29 @@ class EmotionImages:
 
                     # Setup Emotion Datasets
                     image: Image = cleanImage(path)
-                    emotionImageDataSet.append(image)
-
-                    # Split File and determine where to place Gender and Age
-                    pathOptions = file.split("_")
-                    pathOptions[-1] = pathOptions[-1].split(".")[0]
-                    pathOptions[-1] = ''.join([i for i in pathOptions[-1] if not i.isdigit()])
-
-                    # Setup key-val to age and gender datasets
-                    if pathOptions[-2] == "Male":
-                        maleDataset.append(image)
-                    else:
-                        femaleDataset.append(image)
-
-                    if pathOptions[-1] == "Young":
-                        youngDataset.append(image)
-                    elif pathOptions[-1] == "Middle":
-                        middleDataset.append(image)
-                    else:
-                        seniorDataset.append(image)
+                    imageDataSet.append(image)
 
             # Store Them
-            if len(fileDataSet) > 0 and len(emotionImageDataSet) > 0:
+            if len(fileDataSet) > 0 and len(imageDataSet) > 0:
                 folder = root.split("\\")[-1] if platform.system() == "Windows" else root.split("/")[-1]
                 fileDataDict[folder] = fileDataSet.copy()
-                emotionImageDataDict[folder] = emotionImageDataSet.copy()
+                imageDataDict[folder] = imageDataSet.copy()
 
                 # Clear Data
                 fileDataSet.clear()
-                emotionImageDataSet.clear()
-
-            # Setup Gender
-            if len(maleDataset) > 0:
-                genderImageDataDict['Male'].extend(maleDataset)
-                maleDataset.clear()
-
-            if len(femaleDataset) > 0:
-                genderImageDataDict['Female'].extend(femaleDataset)
-                femaleDataset.clear()
-
-            if len(youngDataset) > 0:
-                ageImageDataDict['Young'].extend(youngDataset)
-                youngDataset.clear()
-
-            if len(middleDataset) > 0:
-                ageImageDataDict['Middle'].extend(middleDataset)
-                middleDataset.clear()
-
-            if len(seniorDataset) > 0:
-                ageImageDataDict['Senior'].extend(seniorDataset)
-                seniorDataset.clear()
+                imageDataSet.clear()
 
         # Setup Data
         self.setFileDataset(fileDataDict.copy())
-        self.setEmotionImageDataset(emotionImageDataDict.copy())
-        self.setGenderImageDataset(genderImageDataDict.copy())
-        self.setAgeImageDataset(ageImageDataDict.copy())
+        self.setImageDataset(imageDataDict.copy())
 
         # Delete Ununsed
-        del emotionImageDataDict
+        del imageDataDict
         del fileDataDict
-        del emotionImageDataSet
+        del imageDataSet
         del fileDataSet
 
-        del femaleDataset
-        del maleDataset
-        del youngDataset
-        del middleDataset
-        del seniorDataset
-
-        del genderImageDataDict
-        del ageImageDataDict
-
-    def splitData(self):
+    def splitData(self, data:Dict[str, List[Image.Image]]):
         """
         train_test_split without shuffling was taken by:
         https://stackoverflow.com/questions/43838052/how-to-get-a-non-shuffled-train-test-split-in-sklearn
@@ -244,7 +178,6 @@ class EmotionImages:
         """
 
         # Initialize
-        data = self.getEmotionImageDataset()
         splitData: dict = {
             'train': {
                 'Angry': [],
@@ -301,7 +234,7 @@ class EmotionImages:
 
     def gatherSampleImagesIndexes(self) -> List[list]:
         # Initialize
-        images: dict = self.getEmotionImageDataset()
+        images: dict = self.getImageDataset()
         keys: list = list(images.keys())
         sampleImages: List[list] = []
 
@@ -319,7 +252,7 @@ class EmotionImages:
     def plotSampleImageGrid(self):
         # Gather Inputs
         indexList: List = self.gatherSampleImagesIndexes()
-        images: dict = self.getEmotionImageDataset()
+        images: dict = self.getImageDataset()
 
         # Initialize Grid
         nRows: int = 3
@@ -345,7 +278,7 @@ class EmotionImages:
         """
 
         # Initialize Variables
-        images = self.getEmotionImageDataset()
+        images = self.getImageDataset()
 
         # Setup X-Y
         X: list = list(images.keys())
@@ -368,7 +301,7 @@ class EmotionImages:
     def plotPixelIntensityDistributionClassForSample(self):
         # Gather Inputs
         indexList: List = self.gatherSampleImagesIndexes()
-        imageDict: dict = self.getEmotionImageDataset()
+        imageDict: dict = self.getImageDataset()
         imageList: List = []
 
         # Gather Pixel Distribution
@@ -399,7 +332,7 @@ class EmotionImages:
         """
 
         # Initialize Data
-        imageDict: dict = self.getEmotionImageDataset()
+        imageDict: dict = self.getImageDataset()
 
         # Gather Pixel Distribution
         for key, images in imageDict.items():
@@ -411,23 +344,6 @@ class EmotionImages:
             plt.xlabel('Pixel Intensity')
             plt.ylabel('Frequency')
             plt.title(f'Histogram for Pixel Intensity of {key} Images')
-
-    def getDataLoaders(self):
-        # Update Dataset
-        batchSize: int = 32
-        database: dict = self.getImageSplitDataset()
-
-        # Setup Dataset
-        train_dataset = ImageDataset(database['train'])
-        test_dataset = ImageDataset(database['test'])
-        validation_dataset = ImageDataset(database['validation'])
-
-        # Create DataLoaders
-        train_dataloader = DataLoader(train_dataset, batch_size=batchSize, shuffle=True)
-        test_dataloader = DataLoader(test_dataset, batch_size=batchSize, shuffle=False)
-        validation_dataloader = DataLoader(validation_dataset, batch_size=batchSize, shuffle=False)
-
-        return train_dataloader, test_dataloader, validation_dataloader
 
 
 class ImageDataset(Dataset):

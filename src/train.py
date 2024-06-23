@@ -10,7 +10,7 @@ from sklearn import metrics
 from sklearn.metrics import recall_score, precision_score, f1_score
 from sklearn.model_selection import KFold
 from torch import nn, optim
-from data import DataLoader, ImageDataset, ToTensor
+from emotionData import DataLoader, ImageDataset, ToTensor
 from src.CNN.CNNModel import CNNModel
 from src.CNN.CNNVariant1 import CNNVariant1
 from src.CNN.CNNVariant2 import CNNVariant2
@@ -127,7 +127,8 @@ def trainCNN(dataLoader: List[DataLoader], model: Union[CNNModel, CNNVariant1, C
             prevAccuracy = accuracy
 
         # Test Model for validation [2]
-        all_labels, all_preds = testCNN(dataLoader=dataLoader[2], model=model, device=device, savePath=savePath)
+        all_labels, all_preds = testCNN(dataLoader=dataLoader[2], model=model, device=device, savePath=savePath,
+                                        saveModel=False)
 
     # Kill Code
     displayPerformanceMetrics(all_labels, all_preds)
@@ -245,13 +246,13 @@ def testCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVaria
     savedData = torch.load(savePath) if os.path.exists(savePath) else None
     if isinstance(model, CNNModel):
         if os.path.exists(savePath):
-            print(f"Current Test Accuracy : {savedData['accuracy']:.4f}")
+            print(f"Saved Test Accuracy : {savedData['accuracy']:.4f}")
     elif isinstance(model, CNNVariant1):
         if os.path.exists(savePath):
-            print(f"Current Test Accuracy : {savedData['accuracy']:.4f}")
+            print(f"Saved Test Accuracy : {savedData['accuracy']:.4f}")
     elif isinstance(model, CNNVariant2):
         if os.path.exists(savePath):
-            print(f"Current Test Accuracy : {savedData['accuracy']:.4f}")
+            print(f"Saved Test Accuracy : {savedData['accuracy']:.4f}")
 
     model = model.to(device=device).eval()
 
@@ -290,6 +291,8 @@ def testCNN(dataLoader: DataLoader, model: Union[CNNModel, CNNVariant1, CNNVaria
                 'accuracy': accuracy
             }
             torch.save(modelData, savePath)
+        else:
+            print(f"Epoch Test Accuracy : {accuracy:.4f}%")
 
     return all_labels, all_preds
 
