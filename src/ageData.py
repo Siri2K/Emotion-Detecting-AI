@@ -249,7 +249,7 @@ class AgeImages(EmotionImages):
             self.setYoungImageSplitDataset(splitData.copy())
         elif data == self.getMiddleImageDataset():
             self.setMiddleImageSplitDataset(splitData.copy())
-        elif data == self.getSeniorImageSplitDataset():
+        elif data == self.getSeniorImageDataset():
             self.setSeniorImageSplitDataset(splitData.copy())
 
         del splitData
