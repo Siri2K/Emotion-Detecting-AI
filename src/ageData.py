@@ -93,6 +93,13 @@ class AgeImages(EmotionImages):
         self.splitData(self.getSeniorImageDataset())
 
     def setupFullData(self):
+        """
+        Removing Numbers from a string
+        https://stackoverflow.com/questions/12851791/removing-numbers-from-string
+
+        :return:
+        """
+
         # Initialize Data
         youngImageDataDict: Dict[str, List[Image.Image]] = {}
         middleImageDataDict: Dict[str, List[Image.Image]] = {}
@@ -120,22 +127,24 @@ class AgeImages(EmotionImages):
 
                     # Split File into List and Get the Gender from FileName
                     age: str = file.split('_')[-1]
+                    age = age.split('.')[0]
+                    age = ''.join([i for i in age if not i.isdigit()])
 
                     # Setup Files and Dataset
                     if age == "Young":
                         youngFileDataSet.append(path)
                         image: Image = cleanImage(path)
                         youngImageDataSet.append(image)
-
-                    if age == "Middle":
+                    elif age == "Middle":
                         middleFileDataSet.append(path)
                         image: Image = cleanImage(path)
                         middleImageDataSet.append(image)
-
-                    else:
+                    elif age == "Senior":
                         seniorFileDataSet.append(path)
                         image: Image = cleanImage(path)
                         seniorImageDataSet.append(image)
+                    else:
+                        pass
 
             # Store Image Dataset
             if len(youngFileDataSet) > 0 and len(youngImageDataSet):

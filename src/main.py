@@ -7,16 +7,19 @@ from train import torch
 from train import trainCNN, trainCNNWithKFold, random_image
 from emotionData import EmotionImages, getDataLoaders
 from genderData import GenderImages
+from ageData import AgeImages
 
 
 def main():
     # Initialize DataSets
     dataset = EmotionImages()
     genderDataset = GenderImages()
+    ageDataset = AgeImages()
 
     # Setup Databases
     dataset.setup()
     genderDataset.setup()
+    ageDataset.setup()
 
     # Choose to Either Clean or Visualize Dataset
     models = []
@@ -51,6 +54,15 @@ def main():
     femaleTrainDataloader, femaleTesDataloader, femaleValidationDataloader = getDataLoaders(
         genderDataset.getFemaleImageSplitDataset())  # Female
 
+    youngTrainDataloader, youngTesDataloader, youngValidationDataloader = getDataLoaders(
+        ageDataset.getYoungImageSplitDataset())  # Young
+
+    middleTrainDataloader, middleTesDataloader, middleValidationDataloader = getDataLoaders(
+        ageDataset.getMiddleImageSplitDataset())  # Middle
+
+    seniorTrainDataloader, seniorTesDataloader, seniorValidationDataloader = getDataLoaders(
+        ageDataset.getSeniorImageSplitDataset())  # Senior
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     saveFile: str = ''
 
@@ -63,18 +75,16 @@ def main():
         elif isinstance(model, CNNVariant2):
             saveFile: str = "variant2.pth"
 
-        # Training Datasets
+        # Training Main Datasets
         """ 
         trainCNN(dataLoader=[trainDataloader, tesDataloader, validationDataloader], model=model,
               device=device, savePath=os.path.join(dataset.getDataDirectory(), "bin", saveFile))
         """
 
+        # Train for Biasing
+        """
         trainCNN(dataLoader=[maleTrainDataloader, maleTesDataloader, maleValidationDataloader], model=model,
                  device=device, savePath=os.path.join(genderDataset.getDataDirectory(), "bin", saveFile))
-
-        """
-        trainCNN(dataLoader=[femaleTrainDataloader, femaleTesDataloader, femaleValidationDataloader], model=model,
-              device=device, savePath=os.path.join(genderDataset.getDataDirectory(), "bin", saveFile))
         """
 
         # Train & Test CNN Model with K-Fold
