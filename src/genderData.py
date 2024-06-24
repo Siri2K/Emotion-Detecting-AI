@@ -100,10 +100,12 @@ class GenderImages(EmotionImages):
                         maleFileDataSet.append(path)
                         image: Image = cleanImage(path)
                         maleImageDataSet.append(image)
-                    else:
+                    elif gender == "Female":
                         femaleFileDataSet.append(path)
                         image: Image = cleanImage(path)
                         femaleImageDataSet.append(image)
+                    else:
+                        pass
 
             # Store Image Dataset
             if len(maleFileDataSet) > 0 and len(maleImageDataSet):
