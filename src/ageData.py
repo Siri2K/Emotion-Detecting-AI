@@ -131,15 +131,15 @@ class AgeImages(EmotionImages):
                     age = ''.join([i for i in age if not i.isdigit()])
 
                     # Setup Files and Dataset
-                    if age == "Young":
+                    if age == "Young" or age == "young":
                         youngFileDataSet.append(path)
                         image: Image = cleanImage(path)
                         youngImageDataSet.append(image)
-                    elif age == "Middle":
+                    elif age == "Middle" or age == "middle":
                         middleFileDataSet.append(path)
                         image: Image = cleanImage(path)
                         middleImageDataSet.append(image)
-                    elif age == "Senior":
+                    elif age == "Senior" or age == "senior":
                         seniorFileDataSet.append(path)
                         image: Image = cleanImage(path)
                         seniorImageDataSet.append(image)

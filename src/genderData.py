@@ -96,11 +96,11 @@ class GenderImages(EmotionImages):
                     gender: str = file.split('_')[-2]
 
                     # Setup Files and Dataset
-                    if gender == "Male":
+                    if gender == "Male" or gender == "male":
                         maleFileDataSet.append(path)
                         image: Image = cleanImage(path)
                         maleImageDataSet.append(image)
-                    elif gender == "Female":
+                    elif gender == "Female" or gender == "female":
                         femaleFileDataSet.append(path)
                         image: Image = cleanImage(path)
                         femaleImageDataSet.append(image)
@@ -146,7 +146,7 @@ class GenderImages(EmotionImages):
         del femaleFileDataSet
         del maleFileDataSet
 
-    def splitData(self, data:Dict[str, List[Image.Image]]):
+    def splitData(self, data: Dict[str, List[Image.Image]]):
         # Initialize
         splitData: dict = {
             'train': {
