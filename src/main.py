@@ -82,10 +82,23 @@ def main():
         """
 
         # Train for Biasing
-        """
+
         trainCNN(dataLoader=[maleTrainDataloader, maleTesDataloader, maleValidationDataloader], model=model,
                  device=device, savePath=os.path.join(genderDataset.getDataDirectory(), "bin", saveFile))
-        """
+
+        trainCNN(dataLoader=[femaleTrainDataloader, femaleTesDataloader, femaleValidationDataloader], model=model,
+                 device=device, savePath=os.path.join(genderDataset.getDataDirectory(), "bin", saveFile))
+
+        trainCNN(dataLoader=[youngTrainDataloader, youngTesDataloader, youngValidationDataloader], model=model,
+                 device=device, savePath=os.path.join(ageDataset.getDataDirectory(), "bin", saveFile))
+
+        trainCNN(dataLoader=[middleTrainDataloader, middleTesDataloader, middleValidationDataloader], model=model,
+                 device=device, savePath=os.path.join(ageDataset.getDataDirectory(), "bin", saveFile))
+
+        trainCNN(dataLoader=[seniorTrainDataloader, seniorTesDataloader, seniorValidationDataloader], model=model,
+                 device=device, savePath=os.path.join(ageDataset.getDataDirectory(), "bin", saveFile))
+
+
 
 
         # Train & Test CNN Model with K-Fold
