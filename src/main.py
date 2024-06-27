@@ -76,44 +76,28 @@ def main():
             saveFile: str = "variant2.pth"
 
         # Training Main Datasets
-        """ 
         trainCNN(dataLoader=[trainDataloader, tesDataloader, validationDataloader], model=model,
-              device=device, savePath=os.path.join(dataset.getDataDirectory(), "bin", saveFile))
-        """
+                 device=device, savePath=os.path.join(dataset.getDataDirectory(), "bin", saveFile))
 
         # Train for Biasing
-        """
         trainCNN(dataLoader=[maleTrainDataloader, maleTesDataloader, maleValidationDataloader], model=model,
                  device=device, savePath=os.path.join(genderDataset.getDataDirectory(), "bin", saveFile))
-        """
 
-        """
         trainCNN(dataLoader=[femaleTrainDataloader, femaleTesDataloader, femaleValidationDataloader], model=model,
                  device=device, savePath=os.path.join(genderDataset.getDataDirectory(), "bin", saveFile))
-        """
 
-        """
         trainCNN(dataLoader=[youngTrainDataloader, youngTesDataloader, youngValidationDataloader], model=model,
                  device=device, savePath=os.path.join(ageDataset.getDataDirectory(), "bin", saveFile))
-        """
 
-        """
         trainCNN(dataLoader=[middleTrainDataloader, middleTesDataloader, middleValidationDataloader], model=model,
                  device=device, savePath=os.path.join(ageDataset.getDataDirectory(), "bin", saveFile))
-        """
-
 
         trainCNN(dataLoader=[seniorTrainDataloader, seniorTesDataloader, seniorValidationDataloader], model=model,
                  device=device, savePath=os.path.join(ageDataset.getDataDirectory(), "bin", saveFile))
 
-
-
-
         # Train & Test CNN Model with K-Fold
-        """
         trainCNNWithKFold(dataLoader=[trainDataloader, tesDataloader, validationDataloader], model=model,
                           device=device, savePath=os.path.join(dataset.getDataDirectory(), "bin", saveFile))
-        """
 
     if len(models) > 0:
         random_image(tesDataloader, models)

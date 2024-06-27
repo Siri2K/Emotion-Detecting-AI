@@ -41,6 +41,23 @@ execute the entire program.
         > python src/main.py --display
    - Visualize the dataset (On Windows)
         > python src\main.py --display
-   
-   - Train and Test CNN (On Linux or Mac)
-        > python src/main.py
+
+   - Train and Test CNN Model (On Linux or Mac)
+        >    python src/main.py --base
+   - Train and Test CNN Model (Window)
+        >    python src\main.py --base
+
+   - Train and Test CNN Variant 1 (On Linux or Mac)
+        >    python src/main.py --variant1
+   - Train and Test CNN Variant 1 (Window)
+        >    python src\main.py --variant1
+
+   - Train and Test All CNN (On Linux or Mac)
+        >    python src/main.py --trainAll
+   - Train and Test All CNN (Window)
+        >    python src\main.py --trainAll
+
+   - Train and Test CNN Variant 2 (On Linux or Mac)
+        >    python src/main.py
+   - Train and Test CNN Variant 2 (Window)
+        >    python src\main.py
