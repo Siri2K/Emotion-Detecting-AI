@@ -9,7 +9,7 @@ from PIL import Image
 from matplotlib import pyplot as plt
 from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
-from torchvision.transforms import transforms, ToTensor
+from torchvision.transforms import transforms, ToTensor, ToPILImage
 
 
 def cleanImage(path) -> Image:
@@ -24,11 +24,13 @@ def cleanImage(path) -> Image:
         :return:
     """
 
-    image = Image.open(path)  # Open Image File
-    if image.size != (336, 336) or image.mode != 'L':
-        image = image.convert('L').resize((336, 336), Image.LANCZOS)
-        image.save(path, optimize=True, quality=95)
-    return image
+    with Image.open(path) as image:  # Open Image File
+        if image.size != (336, 336) or image.mode != 'L':
+            image = image.convert('L').resize((336, 336), Image.LANCZOS)
+            image.save(path, optimize=True, quality=95)
+        tensorImage = ToTensor()(image)
+        fullImage = ToPILImage()(tensorImage)
+        return fullImage
 
 
 def gatherRGBOfImages(images: List[Image.Image]) -> List[int]:
