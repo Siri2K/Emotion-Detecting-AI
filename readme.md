@@ -1,4 +1,4 @@
-# 472_project
+# Emotion Detecting AI
 
 ## Group AK-16
 
